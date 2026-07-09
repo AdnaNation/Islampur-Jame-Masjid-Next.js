@@ -654,6 +654,7 @@ const FeePage = () => {
 
                             {/* Submit Button */}
                             <input
+                              name="submit"
                               type="submit"
                               value="সেইভ"
                               className="px-6 mb-1 text-white bg-blue-800 rounded-lg btn-outline"
@@ -739,6 +740,7 @@ const FeePage = () => {
 
                             {/* Submit Button */}
                             <input
+                              name="submit"
                               type="submit"
                               value="সেইভ"
                               className="px-6 mb-1 text-white bg-blue-800 rounded-lg btn-outline"
@@ -775,6 +777,7 @@ const FeePage = () => {
                               >
                                 {user.status === "unpaid" && isAdmin && (
                                   <input
+                                    name="checkbox"
                                     type="checkbox"
                                     checked={selectedMonths.includes(
                                       user.monthName,
@@ -825,6 +828,7 @@ const FeePage = () => {
                               >
                                 {user.status === "unpaid" && isAdmin && (
                                   <input
+                                    name="checkbox"
                                     type="checkbox"
                                     checked={selectedMonths.includes(
                                       user.monthName,
@@ -1186,6 +1190,7 @@ const FeePage = () => {
 
                               {/* Submit Button */}
                               <input
+                                name="submit"
                                 type="submit"
                                 value="পেইড"
                                 className="px-6 mb-1 text-white bg-blue-800 rounded-lg btn-outline"

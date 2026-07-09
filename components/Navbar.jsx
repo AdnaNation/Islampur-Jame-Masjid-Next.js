@@ -8,10 +8,15 @@ import { MdDashboard } from "react-icons/md";
 import { FaHistory } from "react-icons/fa";
 import useAdmin from "@/hooks/useAdmin";
 import { getLocalStorage, removeLocalStorage } from "@/lib/localStorage";
+import { useEffect, useState } from "react";
 
 const Navbar = () => {
-  const userNumber = getLocalStorage("Number");
+  const [userNumber, setUserNumber] = useState(null);
   const [isAdmin] = useAdmin();
+
+  useEffect(() => {
+    setUserNumber(getLocalStorage("Number"));
+  }, []);
 
   return (
     <div className="top-0 navbar bg-base-100">
@@ -53,7 +58,10 @@ const Navbar = () => {
             )}
             {userNumber ? (
               <button
-                onClick={() => removeLocalStorage("Number")}
+                onClick={() => {
+                  removeLocalStorage("Number");
+                  setUserNumber(null);
+                }}
                 className="text-xl md:text-2xl"
               >
                 <IoLogOut />
