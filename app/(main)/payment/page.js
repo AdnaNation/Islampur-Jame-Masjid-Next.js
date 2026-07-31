@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import { FiLoader } from "react-icons/fi";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
+import useAdmin from "@/hooks/useAdmin";
 
 const PaymentHistory = () => {
+  const [isAdmin] = useAdmin();
   const [homeName] = useHomeName();
   const [home, setHome] = useState("home");
   const [name, setName] = useState(" ");
@@ -16,6 +18,12 @@ const PaymentHistory = () => {
     queryFn: async () =>
       await axiosPublic.get(`/paymentHistory?home=${home}&name=${name}`),
   });
+
+  const currentYear = new Date().getFullYear();
+  const totalFeeCurrentYear = data?.data
+    .filter((item) => Number(item.year) === currentYear)
+    .reduce((sum, item) => sum + (Number(item.fee) || 0), 0);
+
   const { data: userName = {}, refetch: reload } = useQuery({
     queryKey: ["usersName", home],
     queryFn: async () => await axiosPublic.get(`/usersName/${home}`),
@@ -71,6 +79,12 @@ const PaymentHistory = () => {
         </select>
       </div>
 
+      {isAdmin && (
+        <p className="flex justify-end mr-6">
+          {Math.floor(totalFeeCurrentYear) || 0}{" "}
+        </p>
+      )}
+
       {data?.data?.length === 0 && (
         <div className="mt-24 mx-auto w-full max-w-72 flex flex-wrap items-center justify-center py-3 pl-4 rounded-lg text-base font-medium [transition:all_0.5s_ease] border-solid border border-[#f85149] text-[#b22b2b] [&_svg]:text-[#b22b2b] group bg-[linear-gradient(#f851491a,#f851491a)]">
           <p className="flex flex-row items-center mr-auto gap-x-2">
@@ -102,13 +116,13 @@ const PaymentHistory = () => {
                       const day = String(date.getDate()).padStart(2, "0");
                       const month = String(date.getMonth() + 1).padStart(
                         2,
-                        "0"
+                        "0",
                       );
                       const year = date.getFullYear();
                       let hours = date.getHours();
                       const minutes = String(date.getMinutes()).padStart(
                         2,
-                        "0"
+                        "0",
                       );
                       const ampm = hours >= 12 ? "PM" : "AM";
                       hours = hours % 12 || 12;
