@@ -110,6 +110,15 @@ const PaymentHistory = () => {
               >
                 <div className="p-5">
                   {/* <h2 className=" text-right text-[12px]">{history.time}</h2> */}
+
+                  {history?.method && (
+                    <div className="flex justify-end">
+                      <p className="w-12 text-[10px] text-center text-white bg-red-500 rounded-lg right-1">
+                        {history.method}
+                      </p>{" "}
+                    </div>
+                  )}
+
                   <h2 className="text-right text-[12px]">
                     {(() => {
                       const date = new Date(history.time);

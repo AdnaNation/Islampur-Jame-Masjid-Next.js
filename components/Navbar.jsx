@@ -5,7 +5,7 @@ import { ImHome } from "react-icons/im";
 import { TbCoinTakaFilled } from "react-icons/tb";
 import { IoLogIn, IoLogOut } from "react-icons/io5";
 import { MdDashboard } from "react-icons/md";
-import { FaHistory } from "react-icons/fa";
+import { FaAmazonPay, FaHistory } from "react-icons/fa";
 import useAdmin from "@/hooks/useAdmin";
 import { getLocalStorage, removeLocalStorage } from "@/lib/localStorage";
 import { useEffect, useState } from "react";
@@ -48,6 +48,9 @@ const Navbar = () => {
             <Link href="/fee" className="text-xl md:text-2xl">
               <TbCoinTakaFilled />{" "}
             </Link>
+            <Link href="/bkash-payment" className="text-xl md:text-2xl">
+              <FaAmazonPay />
+            </Link>
             <Link href="/payment" className="text-xl md:text-2xl">
               <FaHistory />{" "}
             </Link>
@@ -83,6 +86,10 @@ const Navbar = () => {
           <Link className="mr-3 text-2xl" href="/fee">
             <TbCoinTakaFilled />
           </Link>
+          <Link href="/bkash-payment" className="mr-3 text-2xl">
+            <FaAmazonPay />
+          </Link>
+
           <Link className="mr-3 text-2xl" href="/payment">
             <FaHistory />
           </Link>
@@ -93,18 +100,22 @@ const Navbar = () => {
           )}
         </ul>
       </div>
-      <div className="navbar-end">
-        <a
-          href="/"
-          className="flex items-center px-4 py-2 space-x-2 text-white transition duration-300 rounded-md hover:bg-gray-700"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/Icons/profile.svg"
-            alt="Profile"
-            className="w-6 h-6 border-2 border-white rounded-full"
-          />
-        </a>
+      <div className="hidden navbar-end lg:flex">
+        {userNumber ? (
+          <button
+            onClick={() => {
+              removeLocalStorage("Number");
+              setUserNumber(null);
+            }}
+            className="text-xl md:text-2xl"
+          >
+            <IoLogOut />
+          </button>
+        ) : (
+          <Link href="/signin" className="text-xl md:text-2xl">
+            <IoLogIn />
+          </Link>
+        )}
       </div>
     </div>
   );
