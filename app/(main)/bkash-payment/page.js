@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { FiCopy, FiCheck } from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa";
 import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
 import monthTranslation from "@/lib/monthTranslation";
 
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
+const WHATSAPP_NUMBER = "8801776236285";
 
 const BkashPaymentPage = () => {
   const axiosPublic = useAxiosPublic();
@@ -135,6 +137,15 @@ const BkashPaymentPage = () => {
     navigator.clipboard.writeText(String(totalToSend));
     setCopiedAmount(true);
     setTimeout(() => setCopiedAmount(false), 2000);
+  };
+
+  const getWhatsappLink = () => {
+    const parts = ["আসসালামু আলাইকুম, আমার bKash পেমেন্টে সাহায্য দরকার।"];
+    if (user) parts.push(`নামঃ ${user.NameBn} (${user.HomeName})`);
+    if (totalToSend) parts.push(`পরিমাণঃ ৳${totalToSend}`);
+    if (trxID) parts.push(`TrxID: ${trxID}`);
+    const text = encodeURIComponent(parts.join("\n"));
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
   };
 
   const handleSubmitClaim = async (e) => {
@@ -358,7 +369,7 @@ const BkashPaymentPage = () => {
               <p>বকেয়া - ৳{dueAmountValue}</p>
             )}
             <p className="pt-1 font-semibold border-t">
-              মোট - ৳{totalAmount} + ক্যাশআউট চার্জ (15%)
+              মোট - ৳{totalAmount} + ক্যাশআউট চার্জ (১.৫%)
             </p>
           </div>
 
@@ -447,6 +458,20 @@ const BkashPaymentPage = () => {
               পিছনে যান
             </button>
           </form>
+
+          {WHATSAPP_NUMBER && (
+            <p className="text-xs text-center text-gray-500">
+              পেমেন্ট নিয়ে কোনো সমস্যা হলে{" "}
+              <a
+                href={getWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-green-600 underline"
+              >
+                WhatsApp এ যোগাযোগ করুন
+              </a>
+            </p>
+          )}
         </div>
       )}
 
@@ -462,6 +487,20 @@ const BkashPaymentPage = () => {
             আরেকজনের জন্য পরিশোধ করুন
           </button>
         </div>
+      )}
+
+      {WHATSAPP_NUMBER && (
+        <a
+          href={getWhatsappLink()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed z-50 flex items-center gap-2 px-4 py-3 text-white transition bg-green-500 rounded-full shadow-lg bottom-5 right-5 hover:bg-green-600"
+        >
+          <FaWhatsapp className="text-xl" />
+          <span className="hidden text-sm font-medium sm:inline">
+            সাহায্য দরকার?
+          </span>
+        </a>
       )}
     </div>
   );
