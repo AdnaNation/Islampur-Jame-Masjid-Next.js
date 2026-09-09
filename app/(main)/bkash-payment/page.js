@@ -15,7 +15,6 @@ const BkashPaymentPage = () => {
   const axiosPublic = useAxiosPublic();
   const [homeName] = useHomeName();
 
-  // step: "lookup" -> "select" -> "confirm" -> "done" | "noDue"
   const [step, setStep] = useState("lookup");
 
   const [selectedHome, setSelectedHome] = useState("");
