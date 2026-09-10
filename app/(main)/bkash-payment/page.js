@@ -182,6 +182,11 @@ const BkashPaymentPage = () => {
     }
   };
 
+  const maskNumber = (number) => {
+    if (!number || number.length < 6) return number || "";
+    return `${number.slice(0, 3)}***${number.slice(-3)}`;
+  };
+
   return (
     <div className="max-w-xl px-4 mx-auto my-10">
       <h1 className="mb-1 text-2xl font-bold text-center">
@@ -268,6 +273,18 @@ const BkashPaymentPage = () => {
             <p className="font-semibold">{user.NameBn}</p>
             <p className="text-gray-500">{user.HomeName}</p>
           </div>
+
+          {!user.Number ? (
+            <p className="text-[0.5rem] text-red-600 font-bold">
+              আমাদের সার্ভারে আপনার নাম্বার নেই। মাসিক আপডেট পেতে দয়া করে আপনার
+              নাম্বারটি আমাদের হোয়াটসঅ্যাপে প্রদান করবেন
+            </p>
+          ) : (
+            <p className="text-[0.7rem] text-red-600 font-bold">
+              পেমেন্ট রিসিভ হলে আপনার {maskNumber(user.Number)} নাম্বারে SMS
+              পাঠানো হবে।
+            </p>
+          )}
 
           {unpaidMonths.length > 0 && (
             <div>
@@ -482,6 +499,19 @@ const BkashPaymentPage = () => {
           <p className="text-sm text-gray-500">
             আপনার তথ্য জমা হয়েছে। অ্যাডমিন যাচাই করার পর আপনার চাঁদা আপডেট হবে।
           </p>
+          {WHATSAPP_NUMBER && (
+            <p className="text-xs text-center text-gray-500">
+              পেমেন্ট নিয়ে কোনো সমস্যা হলে{" "}
+              <a
+                href={getWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-green-600 underline"
+              >
+                WhatsApp এ যোগাযোগ করুন
+              </a>
+            </p>
+          )}
           <button onClick={resetToLookup} className="btn btn-outline btn-info">
             আরেকজনের জন্য পরিশোধ করুন
           </button>

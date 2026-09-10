@@ -200,7 +200,7 @@ const MessagesPage = () => {
           className={`tab ${mode === "all" ? "tab-active" : ""}`}
           onClick={() => setMode("all")}
         >
-          সব সদস্য ({numbers.length})
+          সব সদস্য
         </button>
       </div>
 

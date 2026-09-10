@@ -797,6 +797,7 @@ const FeePage = () => {
                                     user.monthName}
                                 </div>
                                 <button
+                                  disabled={user.status === "paid"}
                                   onClick={() =>
                                     isAdmin &&
                                     handleModal(user.monthName, selectedId)
@@ -848,6 +849,7 @@ const FeePage = () => {
                                     user.monthName}
                                 </div>
                                 <button
+                                  disabled={user.status === "paid"}
                                   onClick={() =>
                                     isAdmin &&
                                     handleModal(user.monthName, selectedId)
@@ -941,6 +943,7 @@ const FeePage = () => {
                       তারাবীঃ{" "}
                       {currentYear ? (
                         <button
+                          disabled={data?.data?.Tarabi?.status === "paid"}
                           onClick={isAdmin && handleTarabeeModal}
                           className={`inline-flex items-center justify-center px-2 py-2 transition ease-in-out delay-75 text-white text-sm font-medium rounded-md ${
                             data?.data?.Tarabi?.status === "paid"

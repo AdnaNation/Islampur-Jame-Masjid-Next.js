@@ -40,7 +40,7 @@ const Navbar = () => {
           </div>
           <ul
             tabIndex={0}
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow space-y-1"
+            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-18 p-2 shadow space-y-3 flex flex-col items-center justify-center text-center"
           >
             <Link href="/" className="text-xl md:text-2xl">
               <ImHome />
@@ -52,7 +52,7 @@ const Navbar = () => {
               <FaAmazonPay />
             </Link>
             <Link href="/payment" className="text-xl md:text-2xl">
-              <FaHistory />{" "}
+              <FaHistory />
             </Link>
             {isAdmin && (
               <Link href="/dashboard/home" className="text-xl md:text-2xl">
