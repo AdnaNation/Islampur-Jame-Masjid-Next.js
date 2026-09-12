@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { FiLoader } from "react-icons/fi";
+import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
 import useAdmin from "@/hooks/useAdmin";
@@ -12,6 +13,7 @@ const PaymentHistory = () => {
   const [homeName] = useHomeName();
   const [home, setHome] = useState("home");
   const [name, setName] = useState(" ");
+  const [revertingId, setRevertingId] = useState(null);
   const axiosPublic = useAxiosPublic();
   const { data, refetch, isPending } = useQuery({
     queryKey: ["paymentHistory", home, name],
@@ -47,12 +49,61 @@ const PaymentHistory = () => {
     reload();
   };
 
+  const typeLabel = (history) => {
+    if (history.type === "Monthly")
+      return `${history.monthName ? history.monthName + "'র " : ""}মাসিক চাঁদা`;
+    if (history.type === "Tarabi") return "তারাবীর চাঁদা";
+    if (history.type === "Due") return "বকেয়া চাঁদা";
+    return "";
+  };
+
+  const canRevert = (history) => {
+    const paidAt = new Date(history.time).getTime();
+    if (Number.isNaN(paidAt)) return false;
+    return Date.now() - paidAt <= 24 * 60 * 60 * 1000;
+  };
+
+  const handleRevert = async (history) => {
+    const confirm = await Swal.fire({
+      title: "নিশ্চিত করুন",
+      html: `<b>${history.name}</b> (${history.home})<br/>${typeLabel(
+        history,
+      )} ৳${history.fee} - এই পেমেন্টটি বাতিল করা হবে।<br/><br/>এতে সংশ্লিষ্ট মাস/তারাবী/বকেয়া আবার "অপরিশোধিত" হয়ে যাবে এবং সদস্যকে একটি SMS পাঠানো হবে। এটি বাতিল করা যাবে না।`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "হ্যাঁ, বাতিল করুন",
+      cancelButtonText: "না",
+      confirmButtonColor: "#dc2626",
+    });
+    if (!confirm.isConfirmed) return;
+
+    setRevertingId(history._id);
+    try {
+      await axiosPublic.patch(`/payment/${history._id}/revert`);
+      Swal.fire({
+        icon: "success",
+        title: "বাতিল করা হয়েছে",
+        timer: 1000,
+        showConfirmButton: false,
+      });
+      refetch();
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "ব্যর্থ হয়েছে",
+        text: err?.response?.data?.error || "আবার চেষ্টা করুন",
+      });
+    } finally {
+      setRevertingId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-orange-50">
       <div className="flex justify-center gap-1 my-1">
         <select onChange={handleHome} className="w-40 p-2 border rounded">
           <option value="home" className="font-bold bg-red-50">
-            বাড়ির নাম
+            বাড়ির নাম
           </option>
           {homeName.map((home) => (
             <option value={home} key={home}>
@@ -106,7 +157,7 @@ const PaymentHistory = () => {
             .map((history) => (
               <div
                 key={history._id}
-                className="h-40 mx-2 mt-1 shadow-sm card bg-base-100 md:w-80 md:mx-0 "
+                className="h-40 mx-2 mt-1 shadow-sm card bg-base-100 md:w-80 md:mx-0"
               >
                 <div className="p-5">
                   {/* <h2 className=" text-right text-[12px]">{history.time}</h2> */}
@@ -145,9 +196,23 @@ const PaymentHistory = () => {
                     <small>{history.monthName && history.monthName}</small>{" "}
                     {history.type === "Monthly" && "মাসের মাসিক চাঁদা"}
                     {history.type === "Tarabi" && "তারাবীর"}{" "}
-                    {history.type === "Due" && "বকেয়ার"} {history.fee} টাকা
+                    {history.type === "Due" && "বকেয়ার"} {history.fee} টাকা
                     পরিশোধ করেছেন।{" "}
                   </p>
+
+                  {isAdmin && canRevert(history) && (
+                    <div className="flex justify-end mt-2">
+                      <button
+                        disabled={revertingId === history._id}
+                        onClick={() => handleRevert(history)}
+                        className="text-[10px] px-2 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200 disabled:opacity-50"
+                      >
+                        {revertingId === history._id
+                          ? "বাতিল হচ্ছে..."
+                          : "বাতিল করুন"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

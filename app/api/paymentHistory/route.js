@@ -8,9 +8,12 @@ export async function GET(request) {
   const query = {
     name: { $regex: filter.name },
     home: { $regex: filter.home },
+    reverted: { $ne: true },
   };
   if (query.home.$regex === "home") {
-    const result = await paymentCollection.find().toArray();
+    const result = await paymentCollection
+      .find({ reverted: { $ne: true } })
+      .toArray();
     return NextResponse.json(result);
   } else {
     const result = await paymentCollection.find(query).toArray();
