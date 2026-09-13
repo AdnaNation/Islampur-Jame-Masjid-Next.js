@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 
-const BkashRequestsPage = () => {
+const PaymentRequestsPage = () => {
   const axiosPublic = useAxiosPublic();
   const [tab, setTab] = useState("pending"); // pending | approved | rejected
   const [busyId, setBusyId] = useState(null);
@@ -87,7 +87,7 @@ const BkashRequestsPage = () => {
 
   return (
     <div className="max-w-3xl min-h-screen p-4 mx-auto">
-      <h1 className="mb-4 text-xl font-bold">bKash পেমেন্ট অনুরোধ</h1>
+      <h1 className="mb-4 text-xl font-bold">পেমেন্ট রিকোয়েস্ট সমূহ</h1>
 
       <div className="mb-4 tabs tabs-boxed w-fit">
         {["pending", "approved", "rejected"].map((t) => (
@@ -170,4 +170,4 @@ const BkashRequestsPage = () => {
   );
 };
 
-export default BkashRequestsPage;
+export default PaymentRequestsPage;

@@ -48,7 +48,7 @@ const Navbar = () => {
             <Link href="/fee" className="text-xl md:text-2xl">
               <TbCoinTakaFilled />{" "}
             </Link>
-            <Link href="/bkash-payment" className="text-xl md:text-2xl">
+            <Link href="/pay" className="text-xl md:text-2xl">
               <FaAmazonPay />
             </Link>
             <Link href="/payment" className="text-xl md:text-2xl">
@@ -86,7 +86,7 @@ const Navbar = () => {
           <Link className="mr-3 text-2xl" href="/fee">
             <TbCoinTakaFilled />
           </Link>
-          <Link href="/bkash-payment" className="mr-3 text-2xl">
+          <Link href="/pay" className="mr-3 text-2xl">
             <FaAmazonPay />
           </Link>
 

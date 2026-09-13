@@ -8,6 +8,15 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/bkash-payment",
+        destination: "/pay",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

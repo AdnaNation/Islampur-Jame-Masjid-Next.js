@@ -11,7 +11,7 @@ import monthTranslation from "@/lib/monthTranslation";
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
 const WHATSAPP_NUMBER = "8801776236285";
 
-const BkashPaymentPage = () => {
+const PaymentPage = () => {
   const axiosPublic = useAxiosPublic();
   const [homeName] = useHomeName();
 
@@ -535,4 +535,4 @@ const BkashPaymentPage = () => {
   );
 };
 
-export default BkashPaymentPage;
+export default PaymentPage;
