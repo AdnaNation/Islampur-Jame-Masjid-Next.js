@@ -165,11 +165,11 @@ const AddUser = () => {
             className="w-full input input-bordered"
           />
           <p className="text-right">
-            <p onClick={toggleNewHome}>
+            <button type="button" onClick={toggleNewHome}>
               <small className="underline">
                 {newHome ? "পুরাতন বাড়ি?" : "নতুন বাড়ি?"}
               </small>
-            </p>
+            </button>
           </p>
 
           {newHome ? (

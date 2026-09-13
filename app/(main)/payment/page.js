@@ -150,16 +150,16 @@ const PaymentHistory = () => {
         </div>
       )}
       <div className="flex justify-center">
-        <div className="grid items-center justify-center max-w-5xl gap-2 md:grid-cols-3 bg-orange-50">
+        <div className="grid items-center justify-center max-w-5xl gap-2 md:grid-cols-2 lg:grid-cols-3 bg-orange-50 ">
           {data?.data
             ?.slice()
             .reverse()
             .map((history) => (
               <div
                 key={history._id}
-                className="h-40 mx-2 mt-1 shadow-sm card bg-base-100 md:w-80 md:mx-0"
+                className="mx-2 mt-1 shadow-sm h-36 card bg-base-100 md:w-80 md:mx-0"
               >
-                <div className="p-5">
+                <div className="p-5 ">
                   {/* <h2 className=" text-right text-[12px]">{history.time}</h2> */}
 
                   {history?.method && (
@@ -190,6 +190,7 @@ const PaymentHistory = () => {
                       return formattedTime;
                     })()}
                   </h2>
+
                   <p>
                     {history.name} (
                     <small className="mr-1">{history.home}</small>){" "}
@@ -201,11 +202,11 @@ const PaymentHistory = () => {
                   </p>
 
                   {isAdmin && canRevert(history) && (
-                    <div className="flex justify-end mt-2">
+                    <div className="flex items-center justify-end mt-2">
                       <button
                         disabled={revertingId === history._id}
                         onClick={() => handleRevert(history)}
-                        className="text-[10px] px-2 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200 disabled:opacity-50"
+                        className="text-[10px] px-2 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200 disabled:opacity-50 absolute bottom-2 right-4"
                       >
                         {revertingId === history._id
                           ? "বাতিল হচ্ছে..."

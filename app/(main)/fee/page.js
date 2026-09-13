@@ -40,6 +40,9 @@ const FeePage = () => {
   const [id, setId] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedMonths, setSelectedMonths] = useState([]);
+  const [includeTarabi, setIncludeTarabi] = useState(false);
+  const [includeDue, setIncludeDue] = useState(false);
+  const [combinedDueInput, setCombinedDueInput] = useState("");
   const date = new Date().toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -88,6 +91,9 @@ const FeePage = () => {
   });
   const handleUserDetails = (user) => {
     setSelectedMonths([]);
+    setIncludeTarabi(false);
+    setIncludeDue(false);
+    setCombinedDueInput("");
     document.getElementById("my_modal_1").showModal();
     setSelectedId(user._id);
     reload();
@@ -167,7 +173,7 @@ const FeePage = () => {
         refetch();
         Swal.fire({
           position: "top-end",
-          title: "চাঁদা সেইভ করা হয়েছে",
+          title: "চাঁদা সেইভ করা হয়েছে",
           showConfirmButton: false,
           timer: 800,
         });
@@ -195,6 +201,25 @@ const FeePage = () => {
       userFeeRate +
     Number(data?.data?.Due) +
     TarabiFee;
+
+  const allUnpaidMonths = (data?.data?.PayMonths || [])
+    .filter((m) => m.status === "unpaid")
+    .map((m) => m.monthName);
+
+  const handleSelectAllMonths = () => {
+    if (selectedMonths.length === allUnpaidMonths.length) {
+      setSelectedMonths([]);
+    } else {
+      setSelectedMonths(allUnpaidMonths);
+    }
+  };
+
+  // combined selection totals - months + tarabi + a (possibly partial) due
+  const combinedMonthlyAmount = selectedMonths.length * userFeeRate;
+  const combinedTarabiAmount = includeTarabi ? TarabiFee : 0;
+  const combinedDueAmount = includeDue ? Number(combinedDueInput || 0) : 0;
+  const combinedTotal =
+    combinedMonthlyAmount + combinedTarabiAmount + combinedDueAmount;
 
   // checkbox for multiple months
   const handleCheckboxChange = (monthName, id) => {
@@ -240,43 +265,6 @@ const FeePage = () => {
   const yearHandle = () => {
     setCurrentYear(!currentYear);
   };
-  const handleMultiMonthsPay = async () => {
-    const number = data?.data?.Number;
-    const shortMonths = selectedMonths.map((m) => m.slice(0, 3));
-    const message = `আপনি ${shortMonths}'র মাসিক চাঁদা বাবদ ৳${
-      data?.data?.FeeRate * selectedMonths.length
-    } পরিশোধ করেছেন।
-    
--ইসলামপুর জামে মসজিদ`;
-    const paymentData = {
-      userId: data?.data?._id,
-      name: data?.data?.NameBn,
-      home: data?.data.HomeName,
-      fee: data?.data?.FeeRate * selectedMonths.length,
-      monthName: shortMonths.join(" ,"),
-      type: "Monthly",
-      time,
-      year,
-    };
-    setLoading(true);
-    await axiosPublic
-      .patch("/multiple-months", {
-        id: selectedId,
-        months: selectedMonths,
-      })
-      .then((res) => {
-        if (res.data.modifiedCount > 0) {
-          reload();
-          setSelectedMonths("");
-          setLoading(false);
-          setIsOpen3(false);
-          axiosPublic.post("/payment", paymentData);
-          if (number.length === 11) {
-            axiosPublic.post("/sms", { number, message });
-          }
-        }
-      });
-  };
 
   const handleViewFee = () => {
     setIsOpen4(true);
@@ -292,7 +280,7 @@ const FeePage = () => {
     const number = data?.data?.Number;
     const payingDue = dueFee;
     const DueFee = Number(data?.data?.Due) - Number(payingDue);
-    const message = `আপনি আগের বছরের বকেয়া চাঁদা বাবদ ৳${payingDue} পরিশোধ করেছেন।
+    const message = `আপনি আগের বছরের বকেয়া চাঁদা বাবদ ৳${payingDue} পরিশোধ করেছেন।
 
 -ইসলামপুর জামে মসজিদ`;
     const PayingFee = {
@@ -359,6 +347,45 @@ const FeePage = () => {
       }
     });
   };
+
+  // Combined pay - any mix of months / Tarabi / (partial) Due, all in one
+  const handleCombinedPay = async () => {
+    if (combinedTotal === 0) return;
+    setLoading(true);
+    try {
+      await axiosPublic.post("/combined-payment", {
+        userId: data?.data?._id,
+        name: data?.data?.NameBn,
+        home: data?.data?.HomeName,
+        monthly:
+          selectedMonths.length > 0
+            ? { months: selectedMonths, amount: combinedMonthlyAmount }
+            : null,
+        tarabi:
+          combinedTarabiAmount > 0 ? { amount: combinedTarabiAmount } : null,
+        due: combinedDueAmount > 0 ? { amount: combinedDueAmount } : null,
+      });
+      reload();
+      refetch();
+      refresh();
+      setSelectedMonths([]);
+      setIncludeTarabi(false);
+      setIncludeDue(false);
+      setCombinedDueInput("");
+      setLoading(false);
+      setIsOpen3(false);
+      Swal.fire({
+        position: "top-end",
+        title: "পরিশোধ সম্পন্ন হয়েছে",
+        showConfirmButton: false,
+        timer: 1000,
+      });
+    } catch {
+      setLoading(false);
+      Swal.fire({ icon: "error", title: "ব্যর্থ হয়েছে" });
+    }
+  };
+
   return (
     <div className="mt-16">
       <div className="flex max-w-xl">
@@ -369,7 +396,7 @@ const FeePage = () => {
               className="p-2 border rounded md:max-w-52 max-w-32"
             >
               <option value="" className="font-bold bg-red-50">
-                বাড়ির নাম
+                বাড়ির নাম
               </option>
               {homeName.map((home) => (
                 <option value={home} key={home}>
@@ -418,7 +445,7 @@ const FeePage = () => {
                 <th>
                   <p className="text-center">নাম ও নাম্বার</p>
                 </th>
-                <th className="text-center">বাড়ির নাম</th>
+                <th className="text-center">বাড়ির নাম</th>
                 <th className="text-center">চাঁদার হার</th>
               </tr>
             </thead>
@@ -430,7 +457,6 @@ const FeePage = () => {
                     onClick={() => handleUserDetails(user)}
                     key={user._id}
                   >
-                    {" "}
                     <th>{index + 1}</th>
                     <td className="text-[12px]">
                       <p
@@ -564,7 +590,7 @@ const FeePage = () => {
                         )}
                         {currentYear ? (
                           <p className="flex flex-row items-center gap-1 text-sm font-semibold">
-                            বকেয়া চাঁদা: <span>{totalDue ? totalDue : 0}</span>
+                            বকেয়া চাঁদা: <span>{totalDue ? totalDue : 0}</span>
                             <small>টাকা</small>
                             <button className="text-lg" onClick={handleViewFee}>
                               <p className="text-blue-600">
@@ -574,7 +600,7 @@ const FeePage = () => {
                           </p>
                         ) : (
                           <p className="flex flex-row items-center gap-1 text-sm font-semibold">
-                            বকেয়া চাঁদা:{" "}
+                            বকেয়া চাঁদা:{" "}
                             <span>{data?.data?.prevYear?.Due}</span>{" "}
                             <small>টাকা</small>
                           </p>
@@ -648,7 +674,7 @@ const FeePage = () => {
                                 htmlFor="Due"
                                 className="absolute left-0 text-xs transition-all -top-4 cursor-text peer-focus:text-xs peer-focus:-top-4 peer-focus:text-blue-700 peer-placeholder-shown:top-1 peer-placeholder-shown:text-sm"
                               >
-                                আগের বকেয়া চাঁদা
+                                আগের বকেয়া চাঁদা
                               </label>
                             </div>
 
@@ -718,7 +744,7 @@ const FeePage = () => {
                                 htmlFor="HomeName"
                                 className="absolute left-0 text-xs transition-all -top-4 cursor-text peer-focus:text-xs peer-focus:-top-4 peer-focus:text-blue-700 peer-placeholder-shown:top-1 peer-placeholder-shown:text-sm"
                               >
-                                বাড়ির নাম
+                                বাড়ির নাম
                               </label>
                             </div>
 
@@ -763,6 +789,18 @@ const FeePage = () => {
                         <div className="w-full rounded-md h-7 bg-slate-400" />
                         <div className="w-full rounded-md h-7 bg-slate-400" />
                         <div className="w-full rounded-md h-7 bg-slate-400" />
+                      </div>
+                    )}
+                    {currentYear && isAdmin && allUnpaidMonths.length > 0 && (
+                      <div className="flex justify-end py-1">
+                        <button
+                          onClick={handleSelectAllMonths}
+                          className="text-xs text-blue-600 underline"
+                        >
+                          {selectedMonths.length === allUnpaidMonths.length
+                            ? "সব বাদ দিন"
+                            : "সব মাস সিলেক্ট করুন"}
+                        </button>
                       </div>
                     )}
                     {currentYear && userData?.PayMonths && (
@@ -939,24 +977,38 @@ const FeePage = () => {
                   </div>
 
                   <div className="flex justify-between mt-4 text-left">
-                    <div className="font-bold text-md">
+                    <div className="flex items-center gap-1 font-bold text-md">
                       তারাবীঃ{" "}
                       {currentYear ? (
-                        <button
-                          disabled={data?.data?.Tarabi?.status === "paid"}
-                          onClick={isAdmin && handleTarabeeModal}
-                          className={`inline-flex items-center justify-center px-2 py-2 transition ease-in-out delay-75 text-white text-sm font-medium rounded-md ${
-                            data?.data?.Tarabi?.status === "paid"
-                              ? "bg-blue-600 hover:bg-blue-700"
-                              : "bg-red-600 hover:bg-red-700"
-                          }`}
-                        >
-                          {data?.data?.Tarabi?.status === "paid" ? (
-                            <TiTick />
-                          ) : (
-                            <FaTimes />
-                          )}
-                        </button>
+                        <>
+                          {isAdmin &&
+                            active?.data &&
+                            data?.data?.Tarabi?.status === "unpaid" && (
+                              <input
+                                type="checkbox"
+                                checked={includeTarabi}
+                                onChange={(e) =>
+                                  setIncludeTarabi(e.target.checked)
+                                }
+                                className="w-3 h-3 mr-1"
+                              />
+                            )}
+                          <button
+                            disabled={data?.data?.Tarabi?.status === "paid"}
+                            onClick={isAdmin && handleTarabeeModal}
+                            className={`inline-flex items-center justify-center px-2 py-2 transition ease-in-out delay-75 text-white text-sm font-medium rounded-md ${
+                              data?.data?.Tarabi?.status === "paid"
+                                ? "bg-blue-600 hover:bg-blue-700"
+                                : "bg-red-600 hover:bg-red-700"
+                            }`}
+                          >
+                            {data?.data?.Tarabi?.status === "paid" ? (
+                              <TiTick />
+                            ) : (
+                              <FaTimes />
+                            )}
+                          </button>
+                        </>
                       ) : (
                         <button
                           className={`inline-flex items-center justify-center px-2 py-2 transition ease-in-out delay-75 text-white text-sm font-medium rounded-md ${
@@ -974,31 +1026,59 @@ const FeePage = () => {
                       )}
                     </div>
                     {data?.data?.Due > 0 && (
-                      <div className="font-bold text-md">
-                        বকেয়াঃ {""}
-                        <button
-                          onClick={isAdmin && handleDueModal}
-                          className={`inline-flex items-center justify-center px-2 py-2 transition ease-in-out delay-75 text-white text-sm font-medium rounded-md ${
-                            data?.data?.Due < 0
-                              ? "bg-blue-600 hover:bg-blue-700"
-                              : "bg-red-600 hover:bg-red-700"
-                          }`}
-                        >
-                          {data?.data?.Due < 0 ? <TiTick /> : <FaTimes />}
-                        </button>
-                      </div>
-                    )}
-                    {selectedMonths.length > 1 && (
-                      <div>
-                        <button
-                          onClick={() => setIsOpen3(true)}
-                          className="text-white bg-red-500 btn btn-xs"
-                        >
-                          সব পেইড?
-                        </button>
+                      <div className="flex flex-col items-end gap-1 font-bold text-md">
+                        <div className="flex items-center gap-1">
+                          বকেয়াঃ {""}
+                          {isAdmin && (
+                            <input
+                              type="checkbox"
+                              checked={includeDue}
+                              onChange={(e) => {
+                                setIncludeDue(e.target.checked);
+                                setCombinedDueInput(
+                                  e.target.checked ? data?.data?.Due : "",
+                                );
+                              }}
+                              className="w-3 h-3 mr-1"
+                            />
+                          )}
+                          <button
+                            onClick={isAdmin && handleDueModal}
+                            className={`inline-flex items-center justify-center px-2 py-2 transition ease-in-out delay-75 text-white text-sm font-medium rounded-md ${
+                              data?.data?.Due < 0
+                                ? "bg-blue-600 hover:bg-blue-700"
+                                : "bg-red-600 hover:bg-red-700"
+                            }`}
+                          >
+                            {data?.data?.Due < 0 ? <TiTick /> : <FaTimes />}
+                          </button>
+                        </div>
+                        {includeDue && (
+                          <input
+                            type="number"
+                            min="1"
+                            max={data?.data?.Due}
+                            value={combinedDueInput}
+                            onChange={(e) =>
+                              setCombinedDueInput(e.target.value)
+                            }
+                            placeholder="কত টাকা?"
+                            className="w-24 px-1 text-xs font-normal border rounded"
+                          />
+                        )}
                       </div>
                     )}
                   </div>
+                  {combinedTotal > 0 && (
+                    <div className="flex justify-center mt-4">
+                      <button
+                        onClick={() => setIsOpen3(true)}
+                        className="text-white bg-red-500 btn btn-xs"
+                      >
+                        সব পেইড?
+                      </button>
+                    </div>
+                  )}
 
                   {/* <div className="mt-6 text-center">
                   <button className="px-6 py-2 text-white bg-blue-600 rounded-md">
@@ -1018,7 +1098,7 @@ const FeePage = () => {
                     <div className="modal modal-middle modal-open">
                       <div className="modal-box">
                         <p className="py-2 text-center">
-                          চাঁদা দেয়ার ব্যাপারটা আপনি কি নিশ্চিত?
+                          চাঁদা দেয়ার ব্যাপারটা আপনি কি নিশ্চিত?
                         </p>
                         <div className="flex justify-evenly">
                           <button
@@ -1044,11 +1124,24 @@ const FeePage = () => {
                   {isOpen3 && (
                     <div className="modal modal-middle modal-open">
                       <div className="modal-box">
-                        <p className="py-2 text-center">
-                          {selectedMonths.length} মাসের{" "}
-                          {selectedMonths.length * userFeeRate} টাকা চাঁদা দেয়ার
-                          ব্যাপারটা <br /> আপনি কি নিশ্চিত?
-                        </p>
+                        <div className="py-2 text-sm text-center">
+                          {selectedMonths.length > 0 && (
+                            <p>
+                              {selectedMonths.length} মাসের ৳
+                              {combinedMonthlyAmount} টাকা
+                            </p>
+                          )}
+                          {includeTarabi && (
+                            <p>তারাবীর ৳{combinedTarabiAmount} টাকা</p>
+                          )}
+                          {includeDue && combinedDueAmount > 0 && (
+                            <p>বকেয়ার ৳{combinedDueAmount} টাকা</p>
+                          )}
+                          <p className="pt-1 mt-1 font-semibold border-t">
+                            মোট ৳{combinedTotal} টাকা চাঁদা দেয়ার ব্যাপারটা
+                            <br /> আপনি কি নিশ্চিত?
+                          </p>
+                        </div>
                         <div className="flex justify-evenly">
                           <button
                             onClick={() => setIsOpen3(false)}
@@ -1057,7 +1150,8 @@ const FeePage = () => {
                             না
                           </button>
                           <button
-                            onClick={handleMultiMonthsPay}
+                            disabled={loading}
+                            onClick={handleCombinedPay}
                             className="flex items-center px-5 font-semibold leading-6 text-center transition duration-200 bg-green-500 rounded-lg btn btn-xs sm:w-auto text-blue-50 hover:bg-green-600"
                           >
                             হ্যাঁ{" "}
@@ -1073,7 +1167,7 @@ const FeePage = () => {
                   {isOpen4 && (
                     <div className="modal modal-top modal-open">
                       <div className="modal-box">
-                        <p className="py-2 text-center">বকেয়ার বিবেরনী</p>
+                        <p className="py-2 text-center">বকেয়ার বিবেরনী</p>
                         <p className="text-sm font-semibold">
                           তারাবীঃ {TarabiFee}
                           <br />
@@ -1113,7 +1207,7 @@ const FeePage = () => {
                     <div className="modal modal-bottom modal-open">
                       <div className="modal-box">
                         <p className="py-2 text-center">
-                          তারাবীর {data?.data?.Tarabi?.fee} টাকা চাঁদা দেয়ার
+                          তারাবীর {data?.data?.Tarabi?.fee} টাকা চাঁদা দেয়ার
                           ব্যাপারটা আপনি কি নিশ্চিত?
                         </p>
                         <div className="flex justify-evenly">
@@ -1150,8 +1244,8 @@ const FeePage = () => {
                         {isModalOpen ? (
                           <div className="">
                             <p className="py-2 text-center">
-                              বকেয়ার {dueFee} টাকা পরিশোধ করার ব্যাপারটা আপনি কি
-                              নিশ্চিত?
+                              বকেয়ার {dueFee} টাকা পরিশোধ করার ব্যাপারটা আপনি
+                              কি নিশ্চিত?
                             </p>
                             <div className="flex justify-evenly">
                               <button
@@ -1187,7 +1281,7 @@ const FeePage = () => {
                                   htmlFor="Due"
                                   className="absolute left-0 text-xs transition-all -top-4 cursor-text peer-focus:text-xs peer-focus:-top-4 peer-focus:text-blue-700 peer-placeholder-shown:top-1 peer-placeholder-shown:text-sm"
                                 >
-                                  আগের বকেয়া চাঁদা
+                                  আগের বকেয়া চাঁদা
                                 </label>
                               </div>
 
