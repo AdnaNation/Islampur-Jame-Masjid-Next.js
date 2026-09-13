@@ -1,6 +1,16 @@
 import Link from "next/link";
 
 const SignIn = () => {
+  const handleSingIn = () => {
+    Swal.fire({
+      position: "top-end",
+      icon: "error",
+      title: "দুঃখিত! এই ফিচারটি এখনো চালু হয়নি।",
+      showConfirmButton: false,
+      timer: 1500,
+    });
+  };
+
   return (
     <form className=" mx-auto md:max-w-80 space-y-2 mt-14">
       <label className="form-control md:w-96 w-72 px-1 mx-auto">
@@ -20,7 +30,11 @@ const SignIn = () => {
         </div>
       </label>
       <div className="text-center">
-        <button className="btn btn-outline btn-info" type="button">
+        <button
+          onClick={handleSingIn}
+          className="btn btn-outline btn-info"
+          type="button"
+        >
           প্রবেশ করুন
         </button>
       </div>
