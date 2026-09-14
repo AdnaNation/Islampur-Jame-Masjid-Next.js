@@ -73,7 +73,7 @@ const PrayerTimes = () => {
       WAQT_ORDER.find((key) => toMinutes(data.timings[key]) > nowMinutes) ||
       "Fajr";
   }
-
+  console.log("sds", data);
   return (
     <div className="max-w-3xl mx-auto my-8 px-4">
       <div className="text-center gap-y-1 flex flex-col mb-1">

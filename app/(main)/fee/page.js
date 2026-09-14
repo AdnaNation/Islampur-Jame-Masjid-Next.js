@@ -995,7 +995,7 @@ const FeePage = () => {
                             )}
                           <button
                             disabled={data?.data?.Tarabi?.status === "paid"}
-                            onClick={isAdmin && handleTarabeeModal}
+                            onClick={isAdmin ? handleTarabeeModal : undefined}
                             className={`inline-flex items-center justify-center px-2 py-2 transition ease-in-out delay-75 text-white text-sm font-medium rounded-md ${
                               data?.data?.Tarabi?.status === "paid"
                                 ? "bg-blue-600 hover:bg-blue-700"
