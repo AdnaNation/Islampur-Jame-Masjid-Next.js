@@ -7,7 +7,7 @@ import PrayerTimes from "@/components/PrayerTimes";
 export default function Home() {
   return (
     <div>
-      <section className="flex items-center h-full sm:p-16 dark:bg-gray-50 dark:text-gray-800 mt-8">
+      <section className="flex items-center h-full mt-8 sm:p-16 dark:bg-gray-50 dark:text-gray-800">
         <PrayerTimes />
       </section>
       <div className="hidden">
@@ -16,7 +16,7 @@ export default function Home() {
           <div className="hero-overlay bg-opacity-60"></div>
           <div className="w-full mx-auto hero-content text-neutral-content">
             <Image
-              className="shadow-xl md:max-h-96 w-auto h-auto"
+              className="w-auto h-auto shadow-xl md:max-h-96"
               src="/mosque.jpg"
               alt="mosque"
               width={1200}

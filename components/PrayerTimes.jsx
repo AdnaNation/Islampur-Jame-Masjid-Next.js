@@ -73,26 +73,25 @@ const PrayerTimes = () => {
       WAQT_ORDER.find((key) => toMinutes(data.timings[key]) > nowMinutes) ||
       "Fajr";
   }
-  console.log("sds", data);
   return (
-    <div className="max-w-3xl mx-auto my-8 px-4">
-      <div className="text-center gap-y-1 flex flex-col mb-1">
+    <div className="max-w-3xl px-4 mx-auto my-8">
+      <div className="flex flex-col mb-1 text-center gap-y-1">
         <h2 className="text-2xl font-bold">নামাজের সময়সূচী</h2>
-        <p className="text-md text-gray-900">ইসলামপুর জামে মসজিদ</p>
+        <p className="text-gray-900 text-md">ইসলামপুর জামে মসজিদ</p>
         <p className="text-sm text-gray-500">দাগনভূঞা, ফেনী</p>
         {data && (
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="mt-1 text-xs text-gray-400">
             {data.date} {data.hijri ? `· ${data.hijri}` : ""}
           </p>
         )}
       </div>
 
       {isPending && (
-        <div className="text-center py-6 text-gray-400">লোড হচ্ছে...</div>
+        <div className="py-6 text-center text-gray-400">লোড হচ্ছে...</div>
       )}
 
       {isError && (
-        <div className="text-center py-6 text-red-500 text-sm">
+        <div className="py-6 text-sm text-center text-red-500">
           নামাজের সময় লোড করা যায়নি। পরে আবার চেষ্টা করুন।
         </div>
       )}
@@ -110,7 +109,7 @@ const PrayerTimes = () => {
                     : "bg-white border-gray-200"
                 }`}
               >
-                <Icon className="text-3xl mb-1" />
+                <Icon className="mb-1 text-3xl" />
                 <span className="font-semibold">{label}</span>
                 <span className="text-lg">{to12Hour(data.timings[key])}</span>
                 {isNext && (
