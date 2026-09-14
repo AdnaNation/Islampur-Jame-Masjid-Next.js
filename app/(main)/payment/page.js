@@ -14,11 +14,22 @@ const PaymentHistory = () => {
   const [home, setHome] = useState("home");
   const [name, setName] = useState(" ");
   const [revertingId, setRevertingId] = useState(null);
+  const [tab, setTab] = useState("active"); // "active" | "reverted"
   const axiosPublic = useAxiosPublic();
+
+  // Non-admins should never end up stuck on the reverted tab.
+  useEffect(() => {
+    if (!isAdmin) setTab("active");
+  }, [isAdmin]);
+
   const { data, refetch, isPending } = useQuery({
-    queryKey: ["paymentHistory", home, name],
+    queryKey: ["paymentHistory", home, name, tab],
     queryFn: async () =>
-      await axiosPublic.get(`/paymentHistory?home=${home}&name=${name}`),
+      await axiosPublic.get(
+        `/paymentHistory?home=${home}&name=${name}&reverted=${
+          tab === "reverted"
+        }`,
+      ),
   });
 
   const currentYear = new Date().getFullYear();
@@ -100,6 +111,25 @@ const PaymentHistory = () => {
 
   return (
     <div className="min-h-screen bg-orange-50">
+      {isAdmin && (
+        <div className="flex justify-center pt-2">
+          <div className="tabs tabs-boxed w-fit">
+            <button
+              className={`tab ${tab === "active" ? "tab-active" : ""}`}
+              onClick={() => setTab("active")}
+            >
+              পেমেন্ট হিস্টোরি
+            </button>
+            <button
+              className={`tab ${tab === "reverted" ? "tab-active" : ""}`}
+              onClick={() => setTab("reverted")}
+            >
+              বাতিলকৃত পেমেন্ট
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-center gap-1 my-1">
         <select onChange={handleHome} className="w-40 p-2 border rounded">
           <option value="home" className="font-bold bg-red-50">
@@ -130,7 +160,7 @@ const PaymentHistory = () => {
         </select>
       </div>
 
-      {isAdmin && (
+      {isAdmin && tab === "active" && (
         <p className="flex justify-end mr-6">
           {Math.floor(totalFeeCurrentYear) || 0}{" "}
         </p>
@@ -138,9 +168,13 @@ const PaymentHistory = () => {
 
       {data?.data?.length === 0 && (
         <div className="mt-24 mx-auto w-full max-w-72 flex flex-wrap items-center justify-center py-3 pl-4 rounded-lg text-base font-medium [transition:all_0.5s_ease] border-solid border border-[#f85149] text-[#b22b2b] [&_svg]:text-[#b22b2b] group bg-[linear-gradient(#f851491a,#f851491a)]">
-          <p className="flex flex-row items-center mr-auto gap-x-2">
-            <p className="text-xs">{name}'র কোনো পেমেন্ট হিস্টোরি নেই!</p>
-          </p>
+          <div className="flex flex-row items-center mr-auto gap-x-2">
+            <p className="text-xs">
+              {tab === "reverted"
+                ? "কোনো বাতিলকৃত পেমেন্ট নেই!"
+                : `${name}'র কোনো পেমেন্ট হিস্টোরি নেই!`}
+            </p>
+          </div>
         </div>
       )}
 
@@ -162,13 +196,18 @@ const PaymentHistory = () => {
                 <div className="p-5 ">
                   {/* <h2 className=" text-right text-[12px]">{history.time}</h2> */}
 
-                  {history?.method && (
-                    <div className="flex justify-end">
+                  <div className="flex justify-end gap-1">
+                    {tab === "reverted" && (
+                      <p className="px-2 text-[10px] text-center text-white bg-gray-500 rounded-lg">
+                        বাতিলকৃত
+                      </p>
+                    )}
+                    {history?.method && (
                       <p className="w-12 text-[10px] text-center text-white bg-red-500 rounded-lg right-1">
                         {history.method}
-                      </p>{" "}
-                    </div>
-                  )}
+                      </p>
+                    )}
+                  </div>
 
                   <h2 className="text-right text-[12px]">
                     {(() => {
@@ -191,7 +230,11 @@ const PaymentHistory = () => {
                     })()}
                   </h2>
 
-                  <p>
+                  <p
+                    className={
+                      tab === "reverted" ? "line-through opacity-60" : ""
+                    }
+                  >
                     {history.name} (
                     <small className="mr-1">{history.home}</small>){" "}
                     <small>{history.monthName && history.monthName}</small>{" "}
@@ -201,7 +244,7 @@ const PaymentHistory = () => {
                     পরিশোধ করেছেন।{" "}
                   </p>
 
-                  {isAdmin && canRevert(history) && (
+                  {tab === "active" && isAdmin && canRevert(history) && (
                     <div className="flex items-center justify-end mt-2">
                       <button
                         disabled={revertingId === history._id}

@@ -6,7 +6,7 @@ export async function GET(request) {
   const year = Number(searchParams.get("year"));
   const { paymentCollection } = await getCollections();
   const pipeline = [
-    { $match: { year } },
+    { $match: { year, reverted: { $ne: true } } },
     {
       $addFields: {
         feeAsNumber: {

@@ -190,7 +190,7 @@ const PaymentPage = () => {
   return (
     <div className="max-w-xl px-4 mx-auto my-10">
       <h1 className="mb-1 text-2xl font-bold text-center">
-        bKash দিয়ে চাঁদা পরিশোধ
+        Online চাঁদা পরিশোধ
       </h1>
       <p className="mb-8 text-sm text-center text-gray-500">
         ইসলামপুর জামে মসজিদ

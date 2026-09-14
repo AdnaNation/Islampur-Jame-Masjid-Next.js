@@ -297,7 +297,9 @@ const AdminDashboard = () => {
       </div>
       <div className="flex items-center justify-center">
         <button onClick={smsHandle} className="btn-primary btn">
-          {loading ? "Sending SMS" : `Send SMS ${smsBalance?.data?.balance}`}
+          {loading
+            ? "Sending SMS"
+            : `Send SMS ${smsBalance?.data?.balance ? smsBalance?.data?.balance : 0}`}
         </button>
       </div>
       <div className="flex items-center justify-center mt-2">

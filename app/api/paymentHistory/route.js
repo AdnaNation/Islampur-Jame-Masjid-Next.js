@@ -5,14 +5,16 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const filter = Object.fromEntries(searchParams.entries());
   const { paymentCollection } = await getCollections();
+  const showReverted = filter.reverted === "true";
+  const revertedFilter = showReverted ? true : { $ne: true };
   const query = {
     name: { $regex: filter.name },
     home: { $regex: filter.home },
-    reverted: { $ne: true },
+    reverted: revertedFilter,
   };
   if (query.home.$regex === "home") {
     const result = await paymentCollection
-      .find({ reverted: { $ne: true } })
+      .find({ reverted: revertedFilter })
       .toArray();
     return NextResponse.json(result);
   } else {
