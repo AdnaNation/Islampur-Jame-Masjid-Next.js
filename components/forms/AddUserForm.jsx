@@ -8,43 +8,14 @@ import useAxiosPublic from "@/hooks/useAxiosPublic";
 const AddUser = () => {
   const [homeName] = useHomeName();
   const axiosPublic = useAxiosPublic();
+  const [loading, setLoading] = useState(false);
   const [newHome, setNewHome] = useState(false);
-  const [unpaidMonthsCount, setUnpaidMonthsCount] = useState(0);
   const toggleNewHome = () => {
     setNewHome(!newHome);
   };
 
-  /......................./;
-
-  const payMonth = {
-    January: "unpaid",
-    February: "unpaid",
-    March: "unpaid",
-    April: "unpaid",
-  };
-  // Get the current month index
-  const currentMonthIndex = new Date().getMonth();
-  // Get all months in order
-  const monthNames = Object.keys(payMonth);
-
-  const countUnpaidMonths = () => {
-    let unpaidCount = 0;
-    for (let i = 0; i <= currentMonthIndex; i++) {
-      if (payMonth[monthNames[i]] === "unpaid") {
-        unpaidCount++;
-      }
-    }
-    return unpaidCount;
-  };
-
-  useEffect(() => {
-    setUnpaidMonthsCount(countUnpaidMonths());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // console.log(unpaidMonthsCount);
-
   const handleSubmit = async (e) => {
+    setLoading(true);
     e.preventDefault();
     const form = e.target;
     const Name = form.NameEn.value;
@@ -122,7 +93,9 @@ const AddUser = () => {
 
     // send data to the server
     const addUser = await axiosPublic.post("/addUser", user);
+    setLoading(false);
     if (addUser.data.insertedId) {
+      setLoading(false);
       Swal.fire({
         title: "Congrats!",
         text: `${user.NameBn}কে অ্যাড করা হয়েছে!`,
@@ -136,6 +109,7 @@ const AddUser = () => {
         showConfirmButton: false,
         timer: 800,
       });
+      setLoading(false);
     }
   };
 
@@ -193,6 +167,7 @@ const AddUser = () => {
         </div>
         <div className="mt-2 text-center md:w-96 ">
           <input
+            disabled={loading}
             type="submit"
             value="অ্যাড করুন"
             className="btn btn-outline btn-info"
