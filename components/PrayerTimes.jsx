@@ -67,11 +67,17 @@ const PrayerTimes = () => {
     staleTime: 1000 * 60 * 60, // 1 hour
   });
 
-  let nextKey = null;
+  let activeKey = null;
   if (data && nowMinutes !== null) {
-    nextKey =
-      WAQT_ORDER.find((key) => toMinutes(data.timings[key]) > nowMinutes) ||
-      "Fajr";
+    for (let i = WAQT_ORDER.length - 1; i >= 0; i--) {
+      const key = WAQT_ORDER[i];
+      if (toMinutes(data.timings[key]) <= nowMinutes) {
+        activeKey = key;
+        break;
+      }
+    }
+
+    if (!activeKey) activeKey = "Isha";
   }
   return (
     <div className="max-w-3xl px-4 mx-auto my-8 bg-slate-100 py-3">
@@ -99,22 +105,22 @@ const PrayerTimes = () => {
       {data && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
           {PRAYERS.map(({ key, label, icon: Icon }) => {
-            const isNext = key === nextKey;
+            const isActive = key === activeKey;
             return (
               <div
                 key={key}
                 className={`flex flex-col items-center rounded-xl border p-4 shadow-sm transition ${
-                  isNext
+                  isActive
                     ? "bg-emerald-600 text-white border-emerald-600"
                     : "bg-white border-gray-200"
                 }`}
               >
-                <Icon className="mb-1 text-3xl" />
+                <Icon className="text-3xl mb-1" />
                 <span className="font-semibold">{label}</span>
                 <span className="text-lg">{to12Hour(data.timings[key])}</span>
-                {isNext && (
+                {isActive && (
                   <span className="text-[10px] uppercase tracking-wide mt-1 opacity-90">
-                    পরবর্তী নামাজ
+                    চলছে
                   </span>
                 )}
               </div>

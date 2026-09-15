@@ -76,8 +76,6 @@ const QuranSection = () => {
 
       {currentAudioUrl && (
         <div className="mb-4">
-          {/* Re-mount the <audio> element on url change so it always loads
-              the newly selected surah/reciter instead of caching the old src */}
           <audio key={currentAudioUrl} controls className="w-full">
             <source src={currentAudioUrl} type="audio/mpeg" />
           </audio>
