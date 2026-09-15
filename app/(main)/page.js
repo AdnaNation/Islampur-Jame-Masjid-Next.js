@@ -3,6 +3,7 @@ import Image from "next/image";
 import Notification from "@/components/Notification";
 import { FaKaaba } from "react-icons/fa";
 import PrayerTimes from "@/components/PrayerTimes";
+import QuranSection from "@/components/QuranSection";
 
 export default function Home() {
   return (
@@ -10,6 +11,8 @@ export default function Home() {
       <section className="flex items-center h-full mt-8 sm:p-16 dark:bg-gray-50 dark:text-gray-800">
         <PrayerTimes />
       </section>
+
+      <QuranSection />
       <div className="hidden">
         <Notification />
         <div className="mt-16 border rounded-lg ">

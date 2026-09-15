@@ -74,7 +74,7 @@ const PrayerTimes = () => {
       "Fajr";
   }
   return (
-    <div className="max-w-3xl px-4 mx-auto my-8">
+    <div className="max-w-3xl px-4 mx-auto my-8 bg-slate-100 py-3">
       <div className="flex flex-col mb-1 text-center gap-y-1">
         <h2 className="text-2xl font-bold">নামাজের সময়সূচী</h2>
         <p className="text-gray-900 text-md">ইসলামপুর জামে মসজিদ</p>
