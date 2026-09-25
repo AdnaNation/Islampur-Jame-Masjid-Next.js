@@ -11,7 +11,6 @@ export default function Home() {
       <section className="flex items-center h-full mt-8 sm:p-16 dark:bg-gray-50 dark:text-gray-800">
         <PrayerTimes />
       </section>
-
       <QuranSection />
       <div className="hidden">
         <Notification />

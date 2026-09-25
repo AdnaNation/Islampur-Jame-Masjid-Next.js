@@ -28,7 +28,7 @@ export async function PATCH(request, { params }) {
     );
   }
 
-  const time = new Date().toLocaleString();
+  const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
   const year = new Date().getFullYear();
   const messageParts = [];
   let smsNumber = null;

@@ -27,7 +27,7 @@ export async function POST(request) {
   const userQuery = { _id: new ObjectId(userId) };
   const user = await userCollection.findOne(userQuery);
 
-  const time = new Date().toLocaleString();
+  const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
   const year = new Date().getFullYear();
   const messageParts = [];
 

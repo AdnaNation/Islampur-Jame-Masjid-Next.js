@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiCopy, FiCheck } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import Swal from "sweetalert2";
@@ -186,6 +186,12 @@ const PaymentPage = () => {
     if (!number || number.length < 6) return number || "";
     return `${number.slice(0, 3)}***${number.slice(-3)}`;
   };
+
+  useEffect(() => {
+    if (user && user.Due > 0) {
+      setDueAmount(Number(user.Due));
+    }
+  }, [user]);
 
   return (
     <div className="max-w-xl px-4 mx-auto my-10">
