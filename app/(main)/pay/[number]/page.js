@@ -1,29 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { FiCopy, FiCheck } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
-import useHomeName from "@/hooks/useHomeName";
 import monthTranslation from "@/lib/monthTranslation";
 
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
 const WHATSAPP_NUMBER = "8801776236285";
 
-const PaymentPage = () => {
+const DirectPaymentPage = () => {
+  const { number } = useParams();
+  const router = useRouter();
   const axiosPublic = useAxiosPublic();
-  const [homeName] = useHomeName();
 
-  const [step, setStep] = useState("lookup");
+  // step: "loading" -> "select" | "noDue" | "notFound" -> "confirm" -> "done"
+  const [step, setStep] = useState("loading");
 
-  const [selectedHome, setSelectedHome] = useState("");
-  const [names, setNames] = useState([]);
-  const [selectedNameId, setSelectedNameId] = useState("");
-  const [loadingNames, setLoadingNames] = useState(false);
-
-  const [loading, setLoading] = useState(false);
-  const [notFound, setNotFound] = useState(false);
   const [user, setUser] = useState(null);
   const [copied, setCopied] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
@@ -38,70 +33,40 @@ const PaymentPage = () => {
   const [trxID, setTrxID] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const resetSelections = () => {
-    setSelectedMonths([]);
-    setPayTarabi(false);
-    setPayDueChecked(false);
-    setDueAmount("");
-    setSenderNumber("");
-    setTrxID("");
-  };
-
-  const resetToLookup = () => {
-    setSelectedNameId("");
-    setUser(null);
-    setNotFound(false);
-    resetSelections();
-    setStep("lookup");
-  };
-
-  const handleHomeChange = async (e) => {
-    const home = e.target.value;
-    setSelectedHome(home);
-    setSelectedNameId("");
-    setUser(null);
-    setNames([]);
-    setNotFound(false);
-    if (!home) return;
-    setLoadingNames(true);
-    try {
-      const res = await axiosPublic.get(`/usersName/${home}`);
-      setNames(res.data || []);
-    } catch {
-      setNames([]);
-    } finally {
-      setLoadingNames(false);
-    }
-  };
-
-  const handleNameChange = async (e) => {
-    const id = e.target.value;
-    setSelectedNameId(id);
-    if (!id) return;
-    setLoading(true);
-    setNotFound(false);
-    resetSelections();
-    try {
-      const res = await axiosPublic.get(`/user/${id}`);
-      if (res.data && res.data._id) {
-        setUser(res.data);
-        const unpaid = (res.data.PayMonths || []).filter(
-          (m) => m.status === "unpaid",
-        );
-        const hasDue =
-          unpaid.length > 0 ||
-          res.data?.Tarabi?.status === "unpaid" ||
-          Number(res.data?.Due) > 0;
-        setStep(hasDue ? "select" : "noDue");
-      } else {
-        setNotFound(true);
+  // Auto-lookup by the phone number straight from the URL - no home/name
+  // dropdowns needed when someone arrives via a direct link.
+  useEffect(() => {
+    const lookup = async () => {
+      try {
+        const res = await axiosPublic.get(`/userByNumber/${number}`);
+        if (res.data && res.data._id) {
+          setUser(res.data);
+          const unpaid = (res.data.PayMonths || []).filter(
+            (m) => m.status === "unpaid",
+          );
+          const hasDue =
+            unpaid.length > 0 ||
+            res.data?.Tarabi?.status === "unpaid" ||
+            Number(res.data?.Due) > 0;
+          if (hasDue && Number(res.data?.Due) > 0) {
+            setDueAmount(Number(res.data.Due));
+          }
+          setStep(hasDue ? "select" : "noDue");
+        } else {
+          setStep("notFound");
+        }
+      } catch {
+        setStep("notFound");
       }
-    } catch {
-      setNotFound(true);
-    } finally {
-      setLoading(false);
+    };
+    if (number) lookup();
+  }, [number, axiosPublic]);
+
+  useEffect(() => {
+    if (user && Number(user.Due) > 0) {
+      setDueAmount(Number(user.Due));
     }
-  };
+  }, [user]);
 
   const unpaidMonths = (user?.PayMonths || []).filter(
     (m) => m.status === "unpaid",
@@ -182,16 +147,10 @@ const PaymentPage = () => {
     }
   };
 
-  const maskNumber = (number) => {
-    if (!number || number.length < 6) return number || "";
-    return `${number.slice(0, 3)}***${number.slice(-3)}`;
+  const maskNumber = (num) => {
+    if (!num || num.length < 6) return num || "";
+    return `${num.slice(0, 3)}***${num.slice(-3)}`;
   };
-
-  useEffect(() => {
-    if (user && Number(user.Due) > 0) {
-      setDueAmount(Number(user.Due));
-    }
-  }, [user]);
 
   return (
     <div className="max-w-xl px-4 mx-auto my-10">
@@ -202,62 +161,22 @@ const PaymentPage = () => {
         ইসলামপুর জামে মসজিদ
       </p>
 
-      {/* Step 1: home + name select */}
-      {step === "lookup" && (
-        <div className="space-y-3">
-          <label className="form-control">
-            <div className="label">
-              <span className="label-text">বাড়ির নাম</span>
-            </div>
-            <select
-              value={selectedHome}
-              onChange={handleHomeChange}
-              className="w-full select select-bordered"
-            >
-              <option value="" disabled>
-                বাড়ি বাছাই করুন
-              </option>
-              {homeName.map((home) => (
-                <option key={home} value={home}>
-                  {home}
-                </option>
-              ))}
-            </select>
-          </label>
+      {/* Looking up the member from the URL */}
+      {step === "loading" && (
+        <p className="text-sm text-center text-gray-400">তথ্য লোড হচ্ছে...</p>
+      )}
 
-          {selectedHome && (
-            <label className="form-control">
-              <div className="label">
-                <span className="label-text">নাম</span>
-              </div>
-              <select
-                value={selectedNameId}
-                onChange={handleNameChange}
-                className="w-full select select-bordered"
-                disabled={loadingNames}
-              >
-                <option value="" disabled>
-                  {loadingNames ? "লোড হচ্ছে..." : "নাম বাছাই করুন"}
-                </option>
-                {names.map((n) => (
-                  <option key={n._id} value={n._id}>
-                    {n.NameBn}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          {loading && (
-            <p className="text-sm text-center text-gray-400">
-              তথ্য লোড হচ্ছে...
-            </p>
-          )}
-          {notFound && (
-            <p className="text-sm text-red-600">
-              তথ্য পাওয়া যায়নি। আবার চেষ্টা করুন।
-            </p>
-          )}
+      {/* Number in the URL didn't match any member */}
+      {step === "notFound" && (
+        <div className="py-10 space-y-4 text-center">
+          <p className="text-4xl">❌</p>
+          <p className="font-semibold">এই নাম্বারে কোনো সদস্য পাওয়া যায়নি।</p>
+          <button
+            onClick={() => router.push("/pay")}
+            className="btn btn-outline btn-info"
+          >
+            বাড়ি/নাম থেকে বাছাই করুন
+          </button>
         </div>
       )}
 
@@ -266,9 +185,6 @@ const PaymentPage = () => {
         <div className="py-10 space-y-4 text-center">
           <p className="text-4xl">🎉</p>
           <p className="font-semibold">{user.NameBn} এর কোনো বকেয়া নেই।</p>
-          <button onClick={resetToLookup} className="btn btn-outline btn-info">
-            অন্য সদস্য বাছাই করুন
-          </button>
         </div>
       )}
 
@@ -283,7 +199,7 @@ const PaymentPage = () => {
           {!user.Number ? (
             <p className="text-[0.5rem] text-red-600 font-bold">
               আমাদের সার্ভারে আপনার নাম্বার নেই। মাসিক আপডেট পেতে দয়া করে আপনার
-              নাম্বারটি আমাদের হোয়াটসঅ্যাপে প্রদান করবেন
+              নাম্বারটি আমাদের হোয়াটসঅ্যাপে প্রদান করবেন
             </p>
           ) : (
             <p className="text-[0.7rem] text-red-600 font-bold">
@@ -353,12 +269,6 @@ const PaymentPage = () => {
             className="w-full btn btn-info disabled:opacity-50"
           >
             পরবর্তী ধাপ
-          </button>
-          <button
-            onClick={resetToLookup}
-            className="w-full btn btn-ghost btn-sm"
-          >
-            অন্য সদস্য বাছাই করুন
           </button>
         </div>
       )}
@@ -506,9 +416,6 @@ const PaymentPage = () => {
               </a>
             </p>
           )}
-          <button onClick={resetToLookup} className="btn btn-outline btn-info">
-            আরেকজনের জন্য পরিশোধ করুন
-          </button>
         </div>
       )}
 
@@ -529,4 +436,4 @@ const PaymentPage = () => {
   );
 };
 
-export default PaymentPage;
+export default DirectPaymentPage;
