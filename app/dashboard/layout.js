@@ -23,6 +23,7 @@ function DashboardLayout({ children }) {
               <Link href="/dashboard/home">এডমিন হোম</Link>
               <Link href="/dashboard/payment-requests">পেমেন্ট রিকোয়েস্ট</Link>
               <Link href="/dashboard/messages">ম্যাসেজ প্যানেল</Link>
+              <Link href="/dashboard/link-visits">লিংক হিস্টোরি</Link>
               <Link href="/dashboard/addUser">অ্যাড ইউজার</Link>
               <Link href="/dashboard/rent">দোকান ভাড়া</Link>
             </div>
@@ -55,6 +56,9 @@ function DashboardLayout({ children }) {
               </Link>
               <Link onClick={handleToggle} href="/dashboard/messages">
                 ম্যাসেজ প্যানেল
+              </Link>
+              <Link onClick={handleToggle} href="/dashboard/link-visits">
+                লিংক হিস্টোরি
               </Link>
               <Link onClick={handleToggle} href="/dashboard/addUser">
                 অ্যাড ইউজার

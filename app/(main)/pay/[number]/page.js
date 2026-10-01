@@ -37,6 +37,7 @@ const DirectPaymentPage = () => {
   // dropdowns needed when someone arrives via a direct link.
   useEffect(() => {
     const lookup = async () => {
+      axiosPublic.post("/pay-link-visit", { number }).catch(() => {});
       try {
         const res = await axiosPublic.get(`/userByNumber/${number}`);
         if (res.data && res.data._id) {
