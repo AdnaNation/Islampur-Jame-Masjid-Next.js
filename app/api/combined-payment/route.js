@@ -90,9 +90,7 @@ export async function POST(request) {
         messageParts[messageParts.length - 1]
       : messageParts[0];
 
-  const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন।
-
--ইসলামপুর জামে মসজিদ`;
+  const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`;
 
   await sendConfirmationSms(user?.Number, smsMessage);
 
