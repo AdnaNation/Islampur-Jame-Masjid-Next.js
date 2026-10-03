@@ -458,7 +458,11 @@ const FeePage = () => {
                       <p
                         className={`${
                           user?.PayMonths[currentMonthIndex]?.status ===
-                            "unpaid" && "text-red-500"
+                            "unpaid" ||
+                          Number(user?.Due) > 0 ||
+                          (active?.data && user?.Tarabi?.status === "unpaid")
+                            ? "text-red-500"
+                            : ""
                         } text-center`}
                       >
                         {user.NameBn} <br /> {isAdmin && user.Number}
@@ -484,7 +488,11 @@ const FeePage = () => {
                       <p
                         className={`${
                           user?.PayMonths[currentMonthIndex]?.status ===
-                            "unpaid" && "text-red-500"
+                            "unpaid" ||
+                          Number(user?.Due) > 0 ||
+                          (active?.data && user?.Tarabi?.status === "unpaid")
+                            ? "text-red-500"
+                            : ""
                         } text-center`}
                       >
                         {user.NameBn} <br /> {isAdmin && user.Number}
@@ -791,7 +799,7 @@ const FeePage = () => {
                       <div className="flex justify-end py-1">
                         <button
                           onClick={handleSelectAllMonths}
-                          className="text-xs text-blue-600 underline"
+                          className="mb-2 text-xs text-blue-600 underline"
                         >
                           {selectedMonths.length === allUnpaidMonths.length
                             ? "সব বাদ দিন"

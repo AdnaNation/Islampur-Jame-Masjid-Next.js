@@ -181,6 +181,14 @@ const PaymentPage = () => {
       setSubmitting(false);
     }
   };
+  const allMonthsSelected =
+    unpaidMonths.length > 0 && selectedMonths.length === unpaidMonths.length;
+
+  const toggleAllMonths = () => {
+    setSelectedMonths(
+      allMonthsSelected ? [] : unpaidMonths.map((m) => m.monthName),
+    );
+  };
 
   const maskNumber = (number) => {
     if (!number || number.length < 6) return number || "";
@@ -297,6 +305,13 @@ const PaymentPage = () => {
               <p className="mb-1 text-sm font-semibold">
                 মাসিক চাঁদা (৳{user.FeeRate}/মাস)
               </p>
+              <button
+                type="button"
+                onClick={toggleAllMonths}
+                className="mb-2 btn btn-xs btn-outline btn-info"
+              >
+                {allMonthsSelected ? "সব বাতিল করুন" : "সব মাস বাছাই করুন"}
+              </button>
               <div className="grid grid-cols-3 gap-2">
                 {unpaidMonths.map((m) => (
                   <label
