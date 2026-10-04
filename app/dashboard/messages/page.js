@@ -12,7 +12,7 @@ const MessagesPage = () => {
   const [homeName] = useHomeName();
   const [numbers] = useNumbers();
 
-  const [mode, setMode] = useState("single"); // "single" | "all"
+  const [mode, setMode] = useState("single");
 
   const [selectedHome, setSelectedHome] = useState("");
   const [names, setNames] = useState([]);
@@ -22,6 +22,10 @@ const MessagesPage = () => {
   const [loadingUser, setLoadingUser] = useState(false);
   const [customNumbers, setCustomNumbers] = useState("");
 
+  // due-holders filter (used in "all" mode)
+  const [dueOnly, setDueOnly] = useState(false);
+  const [dueNumbers, setDueNumbers] = useState([]);
+  const [loadingDue, setLoadingDue] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -31,6 +35,11 @@ const MessagesPage = () => {
       const res = await axiosPublic.get("/check-balance");
       return res.data;
     },
+  });
+
+  const { data: active } = useQuery({
+    queryKey: ["activeStatus"],
+    queryFn: async () => await axiosPublic.get("/activeStatus"),
   });
 
   const handleHomeChange = async (e) => {
@@ -71,6 +80,47 @@ const MessagesPage = () => {
     .map((n) => n.trim())
     .filter((n) => /^\d{11}$/.test(n));
 
+  // tick = load due-holders' numbers, untick = back to everyone
+  const handleDueToggle = async (e) => {
+    const checked = e.target.checked;
+    setDueOnly(checked);
+
+    if (!checked) {
+      setDueNumbers([]);
+      return;
+    }
+
+    setLoadingDue(true);
+    try {
+      const res = await axiosPublic.get("/users?search=&HomeName=&searchBn=");
+      const users = res.data || [];
+      const currentMonthIndex = new Date().getMonth();
+
+      const list = users
+        .filter((u) => {
+          const unpaidMonths = (u.PayMonths || [])
+            .slice(0, currentMonthIndex + 1)
+            .filter((m) => m.status === "unpaid").length;
+          const tarabi =
+            active?.data && u.Tarabi?.status === "unpaid"
+              ? Number(u.Tarabi?.fee || 0)
+              : 0;
+          const totalDue =
+            unpaidMonths * Number(u.FeeRate || 0) + Number(u.Due || 0) + tarabi;
+          return totalDue > 0 && /^\d{11}$/.test(u.Number || "");
+        })
+        .map((u) => u.Number);
+
+      // families may share one number, so remove duplicates
+      setDueNumbers([...new Set(list)]);
+    } catch {
+      setDueOnly(false);
+      Swal.fire({ icon: "error", title: "তথ্য লোড করা যায়নি" });
+    } finally {
+      setLoadingDue(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!message.trim()) return;
 
@@ -93,8 +143,7 @@ const MessagesPage = () => {
       try {
         await axiosPublic.post("/sms", {
           number: selectedUser.Number,
-          message: `${message} 
-                    -ইসলামপুর জামে মসজিদ`,
+          message: `${message} -ইসলামপুর জামে মসজিদ`,
         });
         Swal.fire({ icon: "success", title: "মেসেজ পাঠানো হয়েছে" });
         setMessage("");
@@ -124,8 +173,7 @@ const MessagesPage = () => {
       setSending(true);
       try {
         const res = await axiosPublic.post("/sms/bulk", {
-          message: `${message} 
-                    -ইসলামপুর জামে মসজিদ`,
+          message: `${message} -ইসলামপুর জামে মসজিদ`,
           numbers: parsedCustomNumbers,
         });
         Swal.fire({
@@ -144,12 +192,21 @@ const MessagesPage = () => {
     }
 
     // mode === "all"
+    const count = dueOnly ? dueNumbers.length : numbers.length;
+
+    if (dueOnly && count === 0) {
+      Swal.fire({ icon: "info", title: "কোনো বকেয়াদার পাওয়া যায়নি" });
+      return;
+    }
+
     const confirm = await Swal.fire({
       title: "নিশ্চিত করুন",
-      html: `মোট <b>${numbers.length}</b> জন সদস্যকে মেসেজ পাঠানো হবে। এটি বাতিল করা যাবে না।`,
+      html: `মোট <b>${count}</b> জন ${
+        dueOnly ? "বকেয়াদারকে" : "সদস্যকে"
+      } মেসেজ পাঠানো হবে। এটি বাতিল করা যাবে না।`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "হ্যাঁ, সবাইকে পাঠান",
+      confirmButtonText: "হ্যাঁ, পাঠান",
       cancelButtonText: "বাতিল",
       confirmButtonColor: "#dc2626",
     });
@@ -158,8 +215,8 @@ const MessagesPage = () => {
     setSending(true);
     try {
       const res = await axiosPublic.post("/sms/bulk", {
-        message: `${message} 
-                    -ইসলামপুর জামে মসজিদ`,
+        message: `${message} -ইসলামপুর জামে মসজিদ`,
+        ...(dueOnly && { numbers: dueNumbers }),
       });
       Swal.fire({
         icon: "success",
@@ -266,6 +323,23 @@ const MessagesPage = () => {
         </div>
       )}
 
+      {mode === "all" && (
+        <label className="flex items-center gap-2 mb-4 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={dueOnly}
+            onChange={handleDueToggle}
+            disabled={loadingDue}
+            className="checkbox checkbox-sm"
+          />
+          {loadingDue
+            ? "লোড হচ্ছে..."
+            : dueOnly
+              ? `শুধু বকেয়াদার (${dueNumbers.length} জন)`
+              : "শুধু বকেয়াদারদের পাঠান"}
+        </label>
+      )}
+
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -278,6 +352,7 @@ const MessagesPage = () => {
         onClick={handleSend}
         disabled={
           sending ||
+          loadingDue ||
           !message.trim() ||
           (mode === "single" && !selectedUser?.Number) ||
           (mode === "custom" && parsedCustomNumbers.length === 0)
@@ -290,7 +365,7 @@ const MessagesPage = () => {
             ? "পাঠান"
             : mode === "custom"
               ? `পাঠান (${parsedCustomNumbers.length} জন)`
-              : `সবাইকে পাঠান (${numbers.length} জন)`}
+              : `সবাইকে পাঠান (${dueOnly ? dueNumbers.length : numbers.length} জন)`}
       </button>
     </div>
   );
