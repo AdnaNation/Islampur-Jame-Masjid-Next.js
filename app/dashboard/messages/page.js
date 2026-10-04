@@ -28,6 +28,7 @@ const MessagesPage = () => {
   const [loadingDue, setLoadingDue] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [banglaMode, setBanglaMode] = useState(true);
 
   const { data: balance } = useQuery({
     queryKey: ["sms-balance"],
@@ -143,7 +144,9 @@ const MessagesPage = () => {
       try {
         await axiosPublic.post("/sms", {
           number: selectedUser.Number,
-          message: `${message} -ইসলামপুর জামে মসজিদ`,
+          message: `${message} ${
+            banglaMode ? "-ইসলামপুর জামে মসজিদ" : "\n-Islampur Jame Masjid"
+          }`,
         });
         Swal.fire({ icon: "success", title: "মেসেজ পাঠানো হয়েছে" });
         setMessage("");
@@ -173,7 +176,9 @@ const MessagesPage = () => {
       setSending(true);
       try {
         const res = await axiosPublic.post("/sms/bulk", {
-          message: `${message} -ইসলামপুর জামে মসজিদ`,
+          message: `${message} ${
+            banglaMode ? "-ইসলামপুর জামে মসজিদ" : "\n-Islampur Jame Masjid"
+          }`,
           numbers: parsedCustomNumbers,
         });
         Swal.fire({
@@ -215,7 +220,9 @@ const MessagesPage = () => {
     setSending(true);
     try {
       const res = await axiosPublic.post("/sms/bulk", {
-        message: `${message} -ইসলামপুর জামে মসজিদ`,
+        message: `${message} ${
+          banglaMode ? "-ইসলামপুর জামে মসজিদ" : "\n-Islampur Jame Masjid"
+        }`,
         ...(dueOnly && { numbers: dueNumbers }),
       });
       Swal.fire({
@@ -231,6 +238,10 @@ const MessagesPage = () => {
     }
   };
 
+  const handleLanguage = () => {
+    setBanglaMode(!banglaMode);
+  };
+
   return (
     <div className="max-w-xl p-4 mx-auto">
       <h1 className="mb-1 text-xl font-bold">মেসেজ পাঠান</h1>
@@ -240,7 +251,7 @@ const MessagesPage = () => {
         </p>
       )}
 
-      <div className="mb-4 tabs tabs-boxed w-fit">
+      <div className="mb-2 tabs tabs-boxed w-fit">
         <button
           className={`tab ${mode === "single" ? "tab-active" : ""}`}
           onClick={() => setMode("single")}
@@ -260,6 +271,13 @@ const MessagesPage = () => {
           সব সদস্য
         </button>
       </div>
+      <button
+        type="button"
+        onClick={handleLanguage}
+        className="mb-2 btn btn-xs btn-outline btn-info"
+      >
+        {banglaMode ? "ইংরেজিতে পাঠান" : "বাংলায় পাঠান"}
+      </button>
 
       {mode === "single" && (
         <div className="mb-4 space-y-3">
