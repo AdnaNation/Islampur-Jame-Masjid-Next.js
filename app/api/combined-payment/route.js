@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getCollections } from "@/lib/mongodb";
 import { sendSms } from "@/lib/sms";
+import { formatMonthRange } from "@/lib/monthRange";
 
 async function sendConfirmationSms(number, message) {
   if (!number || number.length !== 11) return;
@@ -37,7 +38,8 @@ export async function POST(request) {
       { $set: { "PayMonths.$[elem].status": "paid" } },
       { arrayFilters: [{ "elem.monthName": { $in: monthly.months } }] },
     );
-    const shortMonths = monthly.months.map((m) => m.slice(0, 3)).join(" ,");
+    // const shortMonths = monthly.months.map((m) => m.slice(0, 3)).join(" ,");
+    const shortMonths = formatMonthRange(monthly.months);
     await paymentCollection.insertOne({
       userId,
       name,

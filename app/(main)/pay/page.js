@@ -7,6 +7,7 @@ import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
 import monthTranslation from "@/lib/monthTranslation";
+import { formatMonthRange } from "@/lib/monthRange";
 
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
 const WHATSAPP_NUMBER = "8801776236285";
@@ -384,9 +385,8 @@ const PaymentPage = () => {
           <div className="p-3 space-y-1 text-sm border rounded-lg bg-gray-50">
             {selectedMonths.length > 0 && (
               <p>
-                মাসিক চাঁদা (
-                {selectedMonths.map((m) => monthTranslation[m] || m).join(", ")}
-                ) - ৳{monthlyAmount}
+                মাসিক চাঁদা ({formatMonthRange(selectedMonths)}) - ৳
+                {monthlyAmount}
               </p>
             )}
             {payTarabi && <p>তারাবীর চাঁদা - ৳{tarabiAmount}</p>}

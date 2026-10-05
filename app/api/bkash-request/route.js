@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
+import { formatMonthRange } from "@/lib/monthRange";
 
 export async function POST(request) {
   const claim = await request.json();
@@ -32,7 +33,8 @@ export async function POST(request) {
       ? {
           months: claim.monthly.months,
           amount: Number(claim.monthly.amount),
-          monthName: claim.monthly.months.map((m) => m.slice(0, 3)).join(" ,"),
+          // monthName: claim.monthly.months.map((m) => m.slice(0, 3)).join(" ,"),
+          monthName: formatMonthRange(claim.monthly.months),
         }
       : null,
     tarabi: claim.tarabi ? { amount: Number(claim.tarabi.amount) } : null,

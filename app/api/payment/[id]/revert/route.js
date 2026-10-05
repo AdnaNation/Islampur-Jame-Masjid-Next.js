@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getCollections } from "@/lib/mongodb";
 import { sendSms } from "@/lib/sms";
+import { parseMonthRange } from "@/lib/monthRange";
 
 const REVERT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -66,11 +67,11 @@ export async function PATCH(request, { params }) {
   let smsMessage = "";
 
   if (payment.type === "Monthly") {
-    const fullMonths = payment.monthName
-      .split(",")
-      .map((m) => monthAbbrevToFull[m.trim()])
-      .filter(Boolean);
-
+    // const fullMonths = payment.monthName
+    //   .split(",")
+    //   .map((m) => monthAbbrevToFull[m.trim()])
+    //   .filter(Boolean);
+    const fullMonths = parseMonthRange(payment.monthName);
     await userCollection.updateOne(
       { ...userQuery, "PayMonths.monthName": { $in: fullMonths } },
       { $set: { "PayMonths.$[elem].status": "unpaid" } },
@@ -88,9 +89,7 @@ export async function PATCH(request, { params }) {
     await userCollection.updateOne(userQuery, { $set: { Due: restoredDue } });
     smsMessage = `আপনার বকেয়া চাঁদা বাবদ ৳${payment.fee} পরিশোধের এন্ট্রিটি ভুলবশত হয়েছিল, তাই বাতিল করা হয়েছে।`;
   }
-  smsMessage += `
-  
--ইসলামপুর জামে মসজিদ`;
+  smsMessage += ` -ইসলামপুর জামে মসজিদ`;
 
   const result = await paymentCollection.updateOne(
     { _id: new ObjectId(id) },
