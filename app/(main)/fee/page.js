@@ -1453,14 +1453,14 @@ const FeePage = () => {
   );
 
   return (
-    <main className="min-h-screen bg-[#f6f7f4] px-3 pb-20 pt-20 sm:px-6">
+    <main className="min-h-screen bg-[#f6f7f4] px-3 py-8 sm:px-6">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold text-[#0f3d2e]">চাঁদার তালিকা</h1>
         <p className="mt-1 text-sm text-slate-600">
           {users.length} জন সদস্য, {unpaidCount} জনের বকেয়া আছে
         </p>
 
-        <div className="sticky top-16 z-0 -mx-3 mt-3 flex gap-2 bg-[#f6f7f4]/95 px-3 py-2 backdrop-blur sm:mx-0 sm:px-0">
+        <div className="sticky top-4 z-0 -mx-3 mt-3 flex gap-2 bg-[#f6f7f4]/95 px-3 py-2 backdrop-blur sm:mx-0 sm:px-0">
           <select
             value={home}
             onChange={(e) => {
@@ -1481,7 +1481,7 @@ const FeePage = () => {
             type="search"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="নাম বা নাম্বার দিয়ে খুঁজুন"
+            placeholder="নাম দিয়ে খুঁজুন"
             aria-label="সদস্য খুঁজুন"
             className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-[#0f3d2e] focus:outline-none focus:ring-2 focus:ring-[#0f3d2e]/20"
           />
