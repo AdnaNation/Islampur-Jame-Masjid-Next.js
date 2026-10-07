@@ -2,7 +2,7 @@ export async function POST(req) {
   const { to, due_month, due_amount } = await req.json();
 
   const res = await fetch(
-    `https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
+    `https://graph.facebook.com/v26.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
     {
       method: "POST",
       headers: {
