@@ -162,6 +162,17 @@ const AdminDashboard = () => {
       }
     });
   };
+
+  const handleWhatsapp = async () => {
+    axiosPublic
+      .post("/send-whatsapp", {
+        to: "8801811386855",
+        due_month: "October 2026",
+        due_amount: "500",
+      })
+      .then((res) => console.log(res.data));
+  };
+
   //   const YearClosed = async () => {
   //     const numbers = allNumber[0].map((n) => n.Number);
   //     for (const number of numbers) {
@@ -188,6 +199,7 @@ const AdminDashboard = () => {
   //   };
   return (
     <div className="min-h-screen p-2 mx-auto border bg-orange-50">
+      <button onClick={handleWhatsapp}>send whatsapp</button>
       <button
         onClick={HandlePaymentYear}
         className="flex justify-center gap-1 mb-2 ml-6 text-blue-500 underline"
