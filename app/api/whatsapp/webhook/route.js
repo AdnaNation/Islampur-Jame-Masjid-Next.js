@@ -45,6 +45,7 @@ export async function POST(req) {
       text.includes("assalam") ||
       text.includes("সালাম") ||
       text.includes("hello") ||
+      text.includes("adnan") ||
       text.includes("hi")
     ) {
       replyText = `ওয়া আলাইকুমুস সালাম।\n\nইসলামপুর জামে মসজিদে আপনাকে স্বাগতম।\n\n1. বকেয়া জানতে - Due লিখুন\n2. কমিটির সাথে যোগাযোগ - Contact লিখুন\n3. নামাজের সময় - Namaz লিখুন`;
