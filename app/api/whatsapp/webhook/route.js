@@ -150,7 +150,10 @@ function dueMessage(u, tarabiOn, waId) {
   ];
   if (total <= 0) lines.push("✅ *আলহামদুলিল্লাহ, আপনার কোনো বকেয়া নেই।*");
 
-  if (unpaid > 0) lines.push(`• চলতি বছরের বকেয়া: ৳${unpaid * rate}`);
+  if (unpaid > 0)
+    lines.push(
+      `• ${monthName}-${currentYear} পর্যন্ত বকেয়া: ৳${unpaid * rate}`,
+    );
   if (prev > 0) lines.push(`• পূর্বের বছরের বকেয়া: ৳${prev}`);
   if (tarabi > 0) lines.push(`• তারাবীর চাঁদা: ৳${tarabi}`);
   lines.push(
