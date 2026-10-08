@@ -12,7 +12,7 @@ export async function POST(req) {
     finalTo = clean;
   }
 
-  const textToSave = `Due: ${due_month}, Amount: ৳${due_amount} - Islampur Jame Masjid`;
+  const textToSave = `Due: ${due_month}, Amount: ৳${due_amount}`;
 
   const res = await fetch(
     `https://graph.facebook.com/v26.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
