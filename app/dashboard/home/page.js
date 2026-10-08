@@ -11,6 +11,7 @@ import useNumbers from "@/hooks/useNumbers";
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [loading2, setLoading2] = useState(false);
+  const [loading3, setLoading3] = useState(false);
   const axiosPublic = useAxiosPublic();
   const allNumber = useNumbers();
   const monthName = new Date().toLocaleString("en-US", { month: "long" });
@@ -120,6 +121,52 @@ const AdminDashboard = () => {
       }
     }
   };
+
+  const handleWhatsapp = async () => {
+    setLoading3(true);
+    try {
+      const numbers = allNumber[0].map((n) => n.Number);
+      const currentMonthIndex = new Date().getMonth();
+
+      for (const number of numbers) {
+        const { data: user } = await axiosPublic.get(`/userByNumber/${number}`);
+
+        const userFeeRate = Number(user?.FeeRate);
+        const TarabiFee =
+          active?.data && user.Tarabi?.status === "unpaid"
+            ? Number(user.Tarabi?.fee)
+            : 0;
+
+        const unpaidMonths = user.PayMonths?.slice(
+          0,
+          currentMonthIndex + 1,
+        ).filter((m) => m.status === "unpaid").length;
+
+        const totalDue =
+          unpaidMonths * userFeeRate + Number(user.Due) + TarabiFee;
+
+        if (totalDue > 0) {
+          const res = await axiosPublic.post("/sms-db/whatsapp", {
+            number,
+            lastSendingMonth: monthName,
+          });
+
+          if (res?.data?.status !== "skipped") {
+            await axiosPublic.post("/whatsapp", {
+              to: `${number}`,
+              due_month: `${monthName}-${currentYear}`,
+              due_amount: `${totalDue}`,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to send WhatsApp messages:", err);
+    } finally {
+      setLoading3(false);
+    }
+  };
+
   const ClosingYear = async () => {
     setLoading2(true);
     await axiosPublic.patch("/closing-year").then((res) => {
@@ -163,16 +210,6 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleWhatsapp = async () => {
-    axiosPublic
-      .post("/send-whatsapp", {
-        to: "8801811386855",
-        due_month: "October 2026",
-        due_amount: "500",
-      })
-      .then((res) => console.log(res.data));
-  };
-
   //   const YearClosed = async () => {
   //     const numbers = allNumber[0].map((n) => n.Number);
   //     for (const number of numbers) {
@@ -199,7 +236,6 @@ const AdminDashboard = () => {
   //   };
   return (
     <div className="min-h-screen p-2 mx-auto border bg-orange-50">
-      <button onClick={handleWhatsapp}>send whatsapp</button>
       <button
         onClick={HandlePaymentYear}
         className="flex justify-center gap-1 mb-2 ml-6 text-blue-500 underline"
@@ -307,11 +343,14 @@ const AdminDashboard = () => {
           </p>
         </div>
       </div>
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-center gap-2">
         <button onClick={smsHandle} className="btn-primary btn">
           {loading
             ? "Sending SMS"
             : `Send SMS ${smsBalance?.data?.balance ? smsBalance?.data?.balance : 0}`}
+        </button>
+        <button onClick={handleWhatsapp} className="btn-primary btn">
+          {loading3 ? "Sending Whatsapp" : "Send Whatsapp"}
         </button>
       </div>
       <div className="flex items-center justify-center mt-2">
