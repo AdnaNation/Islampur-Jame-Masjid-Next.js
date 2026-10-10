@@ -3,13 +3,14 @@ import { getCollections } from "@/lib/mongodb";
 
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
-const GREETING = `আসসালামু আলাইকুম।\n\n🕌 *ইসলামপুর জামে মসজিদ* সেবায় আপনাকে স্বাগতম।\n\nসহজে তথ্য পেতে নিচের নম্বর বা কিওয়ার্ডগুলো লিখে মেসেজ দিন:\n\n1️⃣ *Due* (বা ১) - বকেয়া জানতে\n2️⃣ *Contact* (বা ২) - কমিটির সাথে যোগাযোগ\n\n_যেকোনো সময় প্রধান মেনুতে ফিরতে *Menu* বা *0* লিখুন।_`;
+const GREETING = `আসসালামু আলাইকুম।\n\n🕌 *ইসলামপুর জামে মসজিদ* সেবায় আপনাকে স্বাগতম।\n\nসহজে তথ্য পেতে নিচের নম্বর বা কিওয়ার্ডগুলো লিখে মেসেজ দিন:\n\n1️⃣ *Due* (বা ১) - বকেয়া জানতে\n2️⃣ *Contact* (বা ২) - কমিটির সাথে যোগাযোগ\n3️⃣ *Namaz* (বা ৩) - নামাজের সময়সূচি\n\n_যেকোনো সময় প্রধান মেনুতে ফিরতে *Menu* বা *0* লিখুন।_`;
 
-const CONTACT = `📞 *মসজিদ কমিটির সাথে যোগাযোগ*\n\n• *সাধারণ সম্পাদক:*\n 01730183325 (আরমান স্যার)\n• *সহ-সাধারণ সম্পাদক:*\n 01776236285 (আদনান)\n*WhatsApp কমিউনিটি:*\n *https://chat.whatsapp.com/Jaxo7XIK62DIoSw0qaSyVV*\n\nজরুরি প্রয়োজনে সরাসরি কল/ম্যাসেজ দেয়ার অনুরোধ করা যাচ্ছে।`;
+const CONTACT = `📞 *মসজিদ কমিটির সাথে যোগাযোগ*\n\n• *সাধারণ সম্পাদক:*\n 01730183325 (আরমান স্যার)\n• *সহ-সাধারণ সম্পাদক:*\n 01776236285 (আদনান)\n*WhatsApp কমিউনিটি:*\n *https://chat.whatsapp.com/Jaxo7XIK62DIoSw0qaSyVV*\n\nজরুরি প্রয়োজনে সরাসরি কল/ম্যাসেজ দেয়ার অনুরোধ করা যাচ্ছে।`;
 
-// const NAMAZ_SCHEDULE = `🕌 *নামাজের সময়সূচি*\n\n• **ফজর:** ৫:১৫ মি.\n• **জোহর:** ১:১৫ মি.\n• **আসর:** ৪:৩০ মি.\n• **মাগরিব:** ৬:০৫ মি.\n• **এশা:** ৭:৩০ মি.\n• **জুমআ:** ১:৩০ মি.\n\n_(সময়সূচি পরিবর্তন সাপেক্ষ)_`;
+const FALLBACK = `দুঃখিত, আপনার উত্তরটি বোঝা যায়নি। \n\nমূল মেনুতে ফিরতে *Menu* বা *Hi* লিখুন, বকেয়া জানতে *Due* অথবা নামাজের সময় জানতে *Namaz* লিখুন।`;
 
-const FALLBACK = `দুঃখিত, আপনার উত্তরটি বোঝা যায়নি। \n\nমূল মেনুতে ফিরতে *Menu* বা *Hi* লিখুন অথবা বকেয়া জানতে *Due* লিখুন।`;
+// Jummah isn't stored in the DB. Edit it here, or set to "" to hide it.
+const JUMMAH_TIME = "১:৩০ মি.";
 
 const bnMap = {
   "০": "0",
@@ -30,6 +31,9 @@ const normalize = (s = "") =>
     .toLowerCase();
 const byBn = (a, b) => (a || "").localeCompare(b || "", "bn");
 const clip = (t) => (t.length > 3900 ? t.slice(0, 3850) + "\n…" : t);
+
+const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+const toBnDigits = (s) => String(s).replace(/\d/g, (d) => BN_DIGITS[d]);
 
 const dhakaMonthIndex = () =>
   Number(
@@ -73,6 +77,7 @@ async function send(to, body) {
   const txt = await res.text();
   if (!res.ok) console.error("WhatsApp send failed:", res.status, txt);
 }
+
 async function tarabiActive() {
   try {
     const { userCollection } = await getCollections();
@@ -161,7 +166,7 @@ function dueMessage(u, tarabiOn, waId) {
     `💰 *সর্বমোট বকেয়া:* *৳${total}*`,
   );
 
-  // ✅ শুধু নিজের নাম্বার হলে দেখাবে
+  // শুধু নিজের নাম্বার হলে দেখাবে
   if (u.Number && waId) {
     const cleanWa = String(waId).replace(/\D/g, "");
     const cleanNum = String(u.Number).replace(/\D/g, "");
@@ -182,6 +187,46 @@ function dueMessage(u, tarabiOn, waId) {
     "\n_অন্য সদস্যের তথ্য দেখতে নাম্বার লিখুন, অথবা বাড়ির তালিকায় ফিরতে *0* লিখুন।_",
   );
   return lines.join("\n");
+}
+
+// "13:15" -> "১:১৫ মি."
+function bnTime(hhmm) {
+  if (!hhmm || !/^\d{1,2}:\d{2}$/.test(hhmm)) return "—";
+  const [h, m] = hhmm.split(":").map(Number);
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return toBnDigits(`${hour12}:${String(m).padStart(2, "0")}`) + " মি.";
+}
+
+async function namazMessage() {
+  try {
+    const { prayerTimeCollection } = await getCollections();
+    const doc = await prayerTimeCollection.findOne({ _id: "prayer-times" });
+    const t = doc?.timings;
+
+    if (!t || !Object.keys(t).length) {
+      return "🕌 *নামাজের সময়সূচি*\n\nসময়সূচি এখনো আপডেট করা হয়নি।\n\n_প্রধান মেনুতে ফিরতে *Menu* বা *0* লিখুন।_";
+    }
+
+    const lines = [
+      "🕌 *নামাজের সময়সূচি*",
+      "",
+      `• *ফজর:* ${bnTime(t.Fajr)}`,
+      `• *যোহর:* ${bnTime(t.Dhuhr)}`,
+      `• *আসর:* ${bnTime(t.Asr)}`,
+      `• *মাগরিব:* ${bnTime(t.Maghrib)}`,
+      `• *এশা:* ${bnTime(t.Isha)}`,
+    ];
+    if (JUMMAH_TIME) lines.push(`• *জুমআ:* ${JUMMAH_TIME}`);
+    lines.push(
+      "",
+      "_(সময়সূচি পরিবর্তন সাপেক্ষ)_",
+      "_প্রধান মেনুতে ফিরতে *Menu* বা *0* লিখুন।_",
+    );
+    return lines.join("\n");
+  } catch (err) {
+    console.error("namazMessage error:", err);
+    return "দুঃখিত, নামাজের সময়সূচি এখন লোড করা যাচ্ছে না। কিছুক্ষণ পরে আবার চেষ্টা করুন।";
+  }
 }
 
 export async function GET(req) {
@@ -273,10 +318,10 @@ export async function POST(req) {
       }
     } else if (text === "1" || /^(due|বকেয়া|বাকি)$/.test(text)) {
       out = await homeList(userCollection);
-      // } else if (text === "2" || /^(namaz|নামাজ|সময়)$/.test(text)) {
-      //   out = { text: NAMAZ_SCHEDULE, state: { step: null } };
     } else if (text === "2" || /^(contact|যোগাযোগ|কমিটি)$/.test(text)) {
       out = { text: CONTACT, state: { step: null } };
+    } else if (text === "3" || /^(namaz|namaj|নামাজ|সময়)$/.test(text)) {
+      out = { text: await namazMessage(), state: { step: null } };
     } else {
       out = { text: FALLBACK, state: { step: null } };
     }
