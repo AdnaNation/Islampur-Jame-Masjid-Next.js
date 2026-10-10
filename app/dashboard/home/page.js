@@ -167,6 +167,19 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleText = async () => {
+    axiosPublic
+      .post("/whatsapp/link-text", {
+        to: "01776236285",
+        due_month: "October-2026",
+        due_amount: "700",
+        member_phone: "01776236285",
+      })
+      .then((res) => {
+        console.log(res);
+      });
+  };
+
   const ClosingYear = async () => {
     setLoading2(true);
     await axiosPublic.patch("/closing-year").then((res) => {
@@ -236,6 +249,7 @@ const AdminDashboard = () => {
   //   };
   return (
     <div className="min-h-screen p-2 mx-auto border bg-orange-50">
+      <button onClick={handleText}>text-link</button>
       <button
         onClick={HandlePaymentYear}
         className="flex justify-center gap-1 mb-2 ml-6 text-blue-500 underline"
