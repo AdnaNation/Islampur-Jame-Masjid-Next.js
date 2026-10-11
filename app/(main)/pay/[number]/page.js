@@ -8,6 +8,7 @@ import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import monthTranslation from "@/lib/monthTranslation";
 import { formatMonthRange } from "@/lib/monthRange";
+import PaymentHistory from "@/components/PaymentHistory";
 
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
 const WHATSAPP_NUMBER = "8801776236285";
@@ -195,6 +196,9 @@ const DirectPaymentPage = () => {
         <div className="py-10 space-y-4 text-center">
           <p className="text-4xl">🎉</p>
           <p className="font-semibold">{user.NameBn} এর কোনো বকেয়া নেই।</p>
+          <div className="text-left">
+            <PaymentHistory userId={user._id} />
+          </div>
         </div>
       )}
 
@@ -287,6 +291,9 @@ const DirectPaymentPage = () => {
           >
             পরবর্তী ধাপ
           </button>
+          <div className="pt-4 border-t">
+            <PaymentHistory userId={user._id} />
+          </div>
         </div>
       )}
 
