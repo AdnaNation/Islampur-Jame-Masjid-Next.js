@@ -12,7 +12,7 @@ export async function POST(req) {
     finalTo = clean;
   }
 
-  const textToSave = `Due: ${due_month}, Amount: ৳${due_amount}`;
+  const textToSave = `Due: ${due_month}, Amount: ৳${due_amount}, link: https://islampurmasjid.com/pay/${to}`;
 
   const res = await fetch(
     `https://graph.facebook.com/v26.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
@@ -27,8 +27,8 @@ export async function POST(req) {
         to: finalTo,
         type: "template",
         template: {
-          name: "mosque_msg",
-          language: { code: "bn" },
+          name: "islampur_masjid",
+          language: { code: "en_US" },
           components: [
             {
               type: "body",
@@ -36,6 +36,12 @@ export async function POST(req) {
                 { type: "text", text: String(due_month) },
                 { type: "text", text: String(due_amount) },
               ],
+            },
+            {
+              type: "button",
+              sub_type: "url",
+              index: "0",
+              parameters: [{ type: "text", text: to }],
             },
           ],
         },
@@ -56,7 +62,7 @@ export async function POST(req) {
               {
                 to: finalTo,
                 message: textToSave,
-                template: "mosque_msg",
+                template: "islampur_masjid",
                 status: data.error ? "failed" : "sent",
                 fbResponse: data,
                 sentAt: new Date().toLocaleString("en-US", {
