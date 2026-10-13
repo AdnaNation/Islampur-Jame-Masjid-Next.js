@@ -31,7 +31,7 @@ const AdminSignIn = () => {
           }
         });
         setAlert(" ");
-        router.push("/fee");
+        router.push("/");
       } else {
         removeLocalStorage("access-token");
         setAlert("কিছু একটা ভুল আছে");
@@ -43,7 +43,7 @@ const AdminSignIn = () => {
   return (
     <form
       onSubmit={handleSignIn}
-      className="mx-auto space-y-2  md:max-w-80 mt-14"
+      className="mx-auto space-y-2 md:max-w-80 mt-14"
     >
       <label className="px-1 mx-auto form-control md:w-96 w-72">
         <div className="label">

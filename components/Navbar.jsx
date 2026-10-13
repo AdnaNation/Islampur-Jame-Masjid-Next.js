@@ -64,6 +64,7 @@ const Navbar = () => {
                 onClick={() => {
                   removeLocalStorage("Number");
                   setUserNumber(null);
+                  navigate("/signin");
                 }}
                 className="text-xl md:text-2xl"
               >
