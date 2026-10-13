@@ -61,23 +61,17 @@ const METHOD = 1;
 const SCHOOL = 1;
 
 // set manually by admin
-const MANUAL_KEYS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+const MANUAL_KEYS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah"];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/; // 24-hour HH:mm
 const DOC_ID = "prayer-times";
 
-/**
- * TODO: replace with your real server-side admin check.
- * It must return the user's email/id if they are an admin, otherwise null.
- * See the examples below the code.
- */
 async function getAdminUser(request) {
-  return null; // locked by default: nobody can save until you implement this
+  return null;
 }
 
 async function fetchAladhan() {
-  // use Bangladesh date, not the server's (Vercel runs in UTC)
   const dateStr = new Date()
-    .toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka" }) // dd/mm/yyyy
+    .toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka" })
     .replaceAll("/", "-");
 
   const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${LATITUDE}&longitude=${LONGITUDE}&method=${METHOD}&school=${SCHOOL}`;
@@ -104,9 +98,10 @@ export async function GET() {
     const timings = {
       // Sunrise always comes from the API
       Sunrise: api?.timings?.Sunrise?.slice(0, 5) ?? null,
+      Sunset: api?.timings?.Sunset?.slice(0, 5) ?? null,
     };
     for (const key of MANUAL_KEYS) {
-      timings[key] = savedTimings[key] || null; // null = not set yet
+      timings[key] = savedTimings[key] || null;
     }
 
     return NextResponse.json({
@@ -136,7 +131,7 @@ export async function PUT(request) {
   const timings = {};
   for (const key of MANUAL_KEYS) {
     const value = input[key];
-    if (value === "" || value == null) continue; // leave unset
+    if (value === "" || value == null) continue;
     if (!TIME_RE.test(value)) {
       return NextResponse.json(
         { error: `Invalid time for ${key}` },

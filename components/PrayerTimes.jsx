@@ -9,6 +9,7 @@ import {
   IoSunny,
   IoPartlySunnyOutline,
   IoCloudyNightOutline,
+  IoPeopleOutline,
 } from "react-icons/io5";
 import useAdmin from "@/hooks/useAdmin";
 
@@ -17,11 +18,13 @@ const PRAYERS = [
   { key: "Sunrise", label: "সূর্যোদয়", icon: IoSunnyOutline },
   { key: "Dhuhr", label: "যোহর", icon: IoSunny },
   { key: "Asr", label: "আসর", icon: IoPartlySunnyOutline },
+  { key: "Sunset", label: "সূর্যাস্ত", icon: IoCloudyNightOutline },
   { key: "Maghrib", label: "মাগরিব", icon: IoCloudyNightOutline },
   { key: "Isha", label: "এশা", icon: IoMoon },
+  { key: "Jummah", label: "জুমআ", icon: IoPeopleOutline },
 ];
 
-const WAQT_ORDER = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+const WAQT_ORDER = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah"];
 
 function to12Hour(hhmm) {
   if (!hhmm) return "--:--";

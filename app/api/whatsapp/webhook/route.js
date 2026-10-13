@@ -215,8 +215,8 @@ async function namazMessage() {
       `• *আসর:* ${bnTime(t.Asr)}`,
       `• *মাগরিব:* ${bnTime(t.Maghrib)}`,
       `• *এশা:* ${bnTime(t.Isha)}`,
+      `• *জুমআ:* ${bnTime(t.Jummah)}`,
     ];
-    if (JUMMAH_TIME) lines.push(`• *জুমআ:* ${JUMMAH_TIME}`);
     lines.push(
       "",
       "_(সময়সূচি পরিবর্তন সাপেক্ষ)_",
