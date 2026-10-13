@@ -12,6 +12,7 @@ import {
   IoPeopleOutline,
 } from "react-icons/io5";
 import useAdmin from "@/hooks/useAdmin";
+import useModerator from "@/hooks/useModerator";
 
 const PRAYERS = [
   { key: "Fajr", label: "ফজর", icon: IoMoonOutline },
@@ -46,7 +47,8 @@ function formatUpdatedAt(value) {
 const PrayerTimes = () => {
   const queryClient = useQueryClient();
   const [isAdmin] = useAdmin();
-
+  const [isModerator] = useModerator();
+  const canEdit = isAdmin || isModerator;
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({});
 
@@ -146,7 +148,7 @@ const PrayerTimes = () => {
           </p>
 
           {/* admin controls: everyone else sees nothing here */}
-          {isAdmin && (
+          {canEdit && (
             <div className="mt-4 text-center">
               {isEditing ? (
                 <div className="flex justify-center gap-3">
