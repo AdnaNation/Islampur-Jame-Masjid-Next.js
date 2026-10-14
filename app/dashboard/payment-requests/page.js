@@ -43,7 +43,11 @@ const PaymentRequestsPage = () => {
 
     setBusyId(claim._id);
     try {
-      await axiosPublic.patch(`/bkash-request/${claim._id}/approve`);
+      await axiosPublic
+        .patch(`/bkash-request/${claim._id}/approve`)
+        .then((res) => {
+          console.log(res.data);
+        });
       Swal.fire({
         icon: "success",
         title: "অনুমোদিত হয়েছে",

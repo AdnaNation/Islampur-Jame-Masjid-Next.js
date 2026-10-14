@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import PrintButton from "@/components/PrintButton";
 import { formatMonthRange } from "@/lib/monthRange";
 import { getPaySlip } from "@/lib/paySlip";
+import SlipActions from "@/components/SlipActions";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,10 @@ export default async function PaySlipPage({ params }) {
 
   return (
     <main className="min-h-screen px-3 py-6 bg-orange-50 print:bg-white print:p-0">
-      <article className="max-w-md mx-auto overflow-hidden bg-white shadow-lg rounded-2xl print:shadow-none print:rounded-none">
+      <article
+        id="slip"
+        className="max-w-md mx-auto overflow-hidden bg-white shadow-lg rounded-2xl print:shadow-none print:rounded-none"
+      >
         <header className="bg-[#0f3d2e] px-5 py-5 text-center text-white">
           <Image
             src="/logo.jpg"
@@ -161,11 +165,9 @@ export default async function PaySlipPage({ params }) {
           <p className="mt-1 text-[11px] text-slate-400">
             জাযাকুমুল্লাহু খাইরান
           </p>
-          <div className="mt-4 print:hidden">
-            <PrintButton />
-          </div>
         </footer>
       </article>
+      <SlipActions fileName={`slip-${slipId}`} />
     </main>
   );
 }
