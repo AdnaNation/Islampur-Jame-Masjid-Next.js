@@ -245,6 +245,7 @@ export async function POST(req) {
     const body = await req.json();
     const value = body.entry?.[0]?.changes?.[0]?.value;
     const message = value?.messages?.[0];
+    console.log(message);
     if (!message)
       return Response.json({ status: "no message" }, { status: 200 });
 
