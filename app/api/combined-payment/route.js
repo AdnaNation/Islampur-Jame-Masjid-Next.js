@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { getCollections } from "@/lib/mongodb";
 import { sendSms } from "@/lib/sms";
 import { formatMonthRange } from "@/lib/monthRange";
+import { createPaySlip } from "@/lib/paySlip";
 
 async function sendConfirmationSms(number, message) {
   if (!number || number.length !== 11) return;
@@ -31,6 +32,7 @@ export async function POST(request) {
   const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
   const year = new Date().getFullYear();
   const messageParts = [];
+  const slipItems = [];
 
   if (monthly) {
     await userCollection.updateOne(
@@ -38,9 +40,8 @@ export async function POST(request) {
       { $set: { "PayMonths.$[elem].status": "paid" } },
       { arrayFilters: [{ "elem.monthName": { $in: monthly.months } }] },
     );
-    // const shortMonths = monthly.months.map((m) => m.slice(0, 3)).join(" ,");
     const shortMonths = formatMonthRange(monthly.months);
-    await paymentCollection.insertOne({
+    const paid = await paymentCollection.insertOne({
       userId,
       name,
       home,
@@ -50,6 +51,12 @@ export async function POST(request) {
       time,
       year,
     });
+    slipItems.push({
+      type: "Monthly",
+      amount: monthly.amount,
+      months: monthly.months,
+      paymentId: paid.insertedId,
+    });
     messageParts.push(`${shortMonths}'র মাসিক চাঁদা বাবদ ৳${monthly.amount}`);
   }
 
@@ -57,7 +64,7 @@ export async function POST(request) {
     await userCollection.updateOne(userQuery, {
       $set: { "Tarabi.status": "paid" },
     });
-    await paymentCollection.insertOne({
+    const paid = await paymentCollection.insertOne({
       userId,
       name,
       home,
@@ -66,6 +73,11 @@ export async function POST(request) {
       time,
       year,
     });
+    slipItems.push({
+      type: "Tarabi",
+      amount: tarabi.amount,
+      paymentId: paid.insertedId,
+    });
     messageParts.push(`তারাবীর চাঁদা বাবদ ৳${tarabi.amount}`);
   }
 
@@ -73,7 +85,7 @@ export async function POST(request) {
     const currentDue = Number(user?.Due || 0);
     const newDue = currentDue - Number(due.amount);
     await userCollection.updateOne(userQuery, { $set: { Due: newDue } });
-    await paymentCollection.insertOne({
+    const paid = await paymentCollection.insertOne({
       userId,
       name,
       home,
@@ -81,6 +93,11 @@ export async function POST(request) {
       type: "Due",
       time,
       year,
+    });
+    slipItems.push({
+      type: "Due",
+      amount: due.amount,
+      paymentId: paid.insertedId,
     });
     messageParts.push(`বকেয়া চাঁদা বাবদ ৳${due.amount}`);
   }
@@ -92,9 +109,18 @@ export async function POST(request) {
         messageParts[messageParts.length - 1]
       : messageParts[0];
 
+  // One slip for everything paid in this single transaction.
+  const slipId = await createPaySlip({
+    userId,
+    name,
+    home,
+    items: slipItems,
+    method: "cash",
+  });
+
   const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`;
 
   await sendConfirmationSms(user?.Number, smsMessage);
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, slipId });
 }

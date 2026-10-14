@@ -6,23 +6,6 @@ import { parseMonthRange } from "@/lib/monthRange";
 
 const REVERT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-// Maps English month abbreviations (as stored in payment.monthName, e.g.
-// "Jan ,Feb") back to full month names (as stored in PayMonths.monthName).
-const monthAbbrevToFull = {
-  Jan: "January",
-  Feb: "February",
-  Mar: "March",
-  Apr: "April",
-  May: "May",
-  Jun: "June",
-  Jul: "July",
-  Aug: "August",
-  Sep: "September",
-  Oct: "October",
-  Nov: "November",
-  Dec: "December",
-};
-
 async function sendRevertSms(number, message) {
   if (!number || number.length !== 11) return;
   try {
@@ -34,7 +17,8 @@ async function sendRevertSms(number, message) {
 
 export async function PATCH(request, { params }) {
   const { id } = await params;
-  const { userCollection, paymentCollection } = await getCollections();
+  const { userCollection, paymentCollection, paySlipCollection } =
+    await getCollections();
 
   const payment = await paymentCollection.findOne({ _id: new ObjectId(id) });
   if (!payment) {
@@ -67,10 +51,6 @@ export async function PATCH(request, { params }) {
   let smsMessage = "";
 
   if (payment.type === "Monthly") {
-    // const fullMonths = payment.monthName
-    //   .split(",")
-    //   .map((m) => monthAbbrevToFull[m.trim()])
-    //   .filter(Boolean);
     const fullMonths = parseMonthRange(payment.monthName);
     await userCollection.updateOne(
       { ...userQuery, "PayMonths.monthName": { $in: fullMonths } },
@@ -95,6 +75,17 @@ export async function PATCH(request, { params }) {
     { _id: new ObjectId(id) },
     { $set: { reverted: true, revertedAt: new Date().toISOString() } },
   );
+
+  // Mark the matching line on the public slip as cancelled.
+  try {
+    await paySlipCollection.updateOne(
+      { "items.paymentId": id },
+      { $set: { "items.$[i].reverted": true } },
+      { arrayFilters: [{ "i.paymentId": id }] },
+    );
+  } catch (err) {
+    console.error("Failed to mark pay slip item as reverted:", err);
+  }
 
   await sendRevertSms(user?.Number, smsMessage);
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getCollections } from "@/lib/mongodb";
 import { sendSms } from "@/lib/sms";
+import { createPaySlip } from "@/lib/paySlip";
 
 async function sendConfirmationSms(number, message) {
   if (!number || number.length !== 11) return;
@@ -31,6 +32,7 @@ export async function PATCH(request, { params }) {
   const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
   const year = new Date().getFullYear();
   const messageParts = [];
+  const slipItems = [];
   let smsNumber = null;
 
   const userQuery = claim.userId ? { _id: new ObjectId(claim.userId) } : null;
@@ -44,7 +46,7 @@ export async function PATCH(request, { params }) {
       { $set: { "PayMonths.$[elem].status": "paid" } },
       { arrayFilters: [{ "elem.monthName": { $in: claim.monthly.months } }] },
     );
-    await paymentCollection.insertOne({
+    const paid = await paymentCollection.insertOne({
       userId: claim.userId,
       name: claim.name,
       home: claim.home,
@@ -59,6 +61,12 @@ export async function PATCH(request, { params }) {
       combinedTotal: claim.totalAmount,
       combinedSentAmount: claim.sentAmount,
     });
+    slipItems.push({
+      type: "Monthly",
+      amount: claim.monthly.amount,
+      months: claim.monthly.months,
+      paymentId: paid.insertedId,
+    });
     messageParts.push(
       `${claim.monthly.monthName}'র মাসিক চাঁদা বাবদ ৳${claim.monthly.amount}`,
     );
@@ -69,7 +77,7 @@ export async function PATCH(request, { params }) {
     await userCollection.updateOne(userQuery, {
       $set: { "Tarabi.status": "paid" },
     });
-    await paymentCollection.insertOne({
+    const paid = await paymentCollection.insertOne({
       userId: claim.userId,
       name: claim.name,
       home: claim.home,
@@ -83,6 +91,11 @@ export async function PATCH(request, { params }) {
       combinedTotal: claim.totalAmount,
       combinedSentAmount: claim.sentAmount,
     });
+    slipItems.push({
+      type: "Tarabi",
+      amount: claim.tarabi.amount,
+      paymentId: paid.insertedId,
+    });
     messageParts.push(`তারাবীর চাঁদা বাবদ ৳${claim.tarabi.amount}`);
   }
 
@@ -91,7 +104,7 @@ export async function PATCH(request, { params }) {
     const currentDue = Number(user?.Due || 0);
     const newDue = currentDue - Number(claim.due.amount);
     await userCollection.updateOne(userQuery, { $set: { Due: newDue } });
-    await paymentCollection.insertOne({
+    const paid = await paymentCollection.insertOne({
       userId: claim.userId,
       name: claim.name,
       home: claim.home,
@@ -105,16 +118,30 @@ export async function PATCH(request, { params }) {
       combinedTotal: claim.totalAmount,
       combinedSentAmount: claim.sentAmount,
     });
+    slipItems.push({
+      type: "Due",
+      amount: claim.due.amount,
+      paymentId: paid.insertedId,
+    });
     messageParts.push(`বকেয়া চাঁদা বাবদ ৳${claim.due.amount}`);
   }
 
-  // One combined SMS covering everything paid in this single bKash send.
   const joinedParts =
     messageParts.length > 1
       ? messageParts.slice(0, -1).join(", ") +
         " ও " +
         messageParts[messageParts.length - 1]
       : messageParts[0];
+
+  // One slip for the whole bKash send.
+  const slipId = await createPaySlip({
+    userId: claim.userId,
+    name: claim.name,
+    home: claim.home,
+    items: slipItems,
+    method: "bkash",
+    trxID: claim.trxID,
+  });
 
   const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন।
 
@@ -124,8 +151,14 @@ export async function PATCH(request, { params }) {
 
   const result = await bkashRequestCollection.updateOne(
     { _id: new ObjectId(id) },
-    { $set: { status: "approved", reviewedAt: new Date().toISOString() } },
+    {
+      $set: {
+        status: "approved",
+        reviewedAt: new Date().toISOString(),
+        ...(slipId ? { slipId } : {}), // saved on the claim so you can find it later
+      },
+    },
   );
 
-  return NextResponse.json(result);
+  return NextResponse.json({ ...result, slipId });
 }
