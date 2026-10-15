@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FiCopy, FiCheck } from "react-icons/fi";
-import { FaWhatsapp } from "react-icons/fa";
 import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import monthTranslation from "@/lib/monthTranslation";
@@ -440,20 +439,6 @@ const DirectPaymentPage = () => {
             </p>
           )}
         </div>
-      )}
-
-      {WHATSAPP_NUMBER && (
-        <a
-          href={getWhatsappLink()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed z-50 flex items-center gap-2 px-4 py-3 text-white transition bg-green-500 rounded-full shadow-lg bottom-5 right-5 hover:bg-green-600"
-        >
-          <FaWhatsapp className="text-xl" />
-          <span className="hidden text-sm font-medium sm:inline">
-            সাহায্য দরকার?
-          </span>
-        </a>
       )}
     </div>
   );

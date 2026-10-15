@@ -1,3 +1,4 @@
+import FloatingSocial from "@/components/FloatingSocial";
 import "./globals.css";
 import Providers from "@/components/Providers";
 
@@ -14,6 +15,7 @@ export default function RootLayout({ children }) {
     <html lang="en" data-theme="light">
       <body>
         <Providers>{children}</Providers>
+        <FloatingSocial />
       </body>
     </html>
   );
