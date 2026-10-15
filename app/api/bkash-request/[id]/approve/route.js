@@ -133,7 +133,6 @@ export async function PATCH(request, { params }) {
         messageParts[messageParts.length - 1]
       : messageParts[0];
 
-  // One slip for the whole bKash send.
   const slipId = await createPaySlip({
     userId: claim.userId,
     name: claim.name,
@@ -144,7 +143,6 @@ export async function PATCH(request, { params }) {
   });
 
   const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন।
-
 -ইসলামপুর জামে মসজিদ`;
 
   await sendConfirmationSms(smsNumber, smsMessage);
@@ -155,10 +153,10 @@ export async function PATCH(request, { params }) {
       $set: {
         status: "approved",
         reviewedAt: new Date().toISOString(),
-        ...(slipId ? { slipId } : {}), // saved on the claim so you can find it later
+        ...(slipId ? { slipId } : {}),
       },
     },
   );
 
-  return NextResponse.json({ ...result, slipId });
+  return NextResponse.json({ ...result, smsNumber, slipId });
 }

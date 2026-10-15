@@ -172,16 +172,25 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
       axiosPublic.post("/sms", { number: u.Number, message });
   };
   const record = (extra) =>
-    axiosPublic.post("/payment", {
-      userId: u._id,
-      name: u.NameBn,
-      home: u.HomeName,
-      time: new Date().toLocaleString(),
-      year,
-      ...extra,
-    });
+    axiosPublic
+      .post("/payment", {
+        userId: u._id,
+        name: u.NameBn,
+        home: u.HomeName,
+        time: new Date().toLocaleString(),
+        year,
+        ...extra,
+      })
+      .then((res) => {
+        if (u?.Number && res?.data?.slipId) {
+          axiosPublic.post("/whatsapp/payment", {
+            to: u.Number,
+            total_amount: extra.fee,
+            slipId: res.data.slipId,
+          });
+        }
+      });
 
-  // ---- actions (same endpoints as the old page) ----
   const payMonth = (monthName) =>
     run(async () => {
       const res = await axiosPublic.patch("/monthStatus", {
@@ -228,14 +237,24 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
   const payAll = () =>
     run(async () => {
       if (total === 0) return;
-      await axiosPublic.post("/combined-payment", {
-        userId: u._id,
-        name: u.NameBn,
-        home: u.HomeName,
-        monthly: months.length ? { months, amount: monthlyAmt } : null,
-        tarabi: tarabiAmt > 0 ? { amount: tarabiAmt } : null,
-        due: dueAmount > 0 ? { amount: dueAmount } : null,
-      });
+      await axiosPublic
+        .post("/combined-payment", {
+          userId: u._id,
+          name: u.NameBn,
+          home: u.HomeName,
+          monthly: months.length ? { months, amount: monthlyAmt } : null,
+          tarabi: tarabiAmt > 0 ? { amount: tarabiAmt } : null,
+          due: dueAmount > 0 ? { amount: dueAmount } : null,
+        })
+        .then((res) => {
+          if (res?.data?.slipId && u?.Number) {
+            axiosPublic.post("/whatsapp/payment", {
+              to: u.Number,
+              total_amount: total,
+              slipId: res.data.slipId,
+            });
+          }
+        });
       setMonths([]);
       setWithTarabi(false);
       setWithDue(false);

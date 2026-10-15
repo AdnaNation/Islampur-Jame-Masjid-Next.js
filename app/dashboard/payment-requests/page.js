@@ -7,7 +7,7 @@ import useAxiosPublic from "@/hooks/useAxiosPublic";
 
 const PaymentRequestsPage = () => {
   const axiosPublic = useAxiosPublic();
-  const [tab, setTab] = useState("pending"); // pending | approved | rejected
+  const [tab, setTab] = useState("pending");
   const [busyId, setBusyId] = useState(null);
 
   const {
@@ -46,7 +46,13 @@ const PaymentRequestsPage = () => {
       await axiosPublic
         .patch(`/bkash-request/${claim._id}/approve`)
         .then((res) => {
-          console.log(res.data);
+          if (res?.data?.smsNumber && res?.data?.slipId) {
+            axiosPublic.post("/whatsapp/payment", {
+              to: res.data.smsNumber,
+              total_amount: claim.totalAmount,
+              slipId: res.data.slipId,
+            });
+          }
         });
       Swal.fire({
         icon: "success",

@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import PrintButton from "@/components/PrintButton";
 import { formatMonthRange } from "@/lib/monthRange";
 import { getPaySlip } from "@/lib/paySlip";
 import SlipActions from "@/components/SlipActions";
