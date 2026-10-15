@@ -60,12 +60,12 @@ export default async function PaySlipPage({ params }) {
         id="slip"
         className="max-w-md mx-auto overflow-hidden bg-white shadow-lg rounded-2xl print:shadow-none print:rounded-none"
       >
-        <header className="bg-[#0f3d2e] px-5 py-5 text-center text-white">
+        <header className="bg-[#0f3d2e]  px-5 py-5 text-center text-white">
           <Image
             src="/logo.jpg"
             alt="ইসলামপুর জামে মসজিদ"
-            width={56}
-            height={56}
+            width={70}
+            height={70}
             className="mx-auto mb-2 rounded-full"
           />
           <h1 className="text-xl font-bold">ইসলামপুর জামে মসজিদ</h1>

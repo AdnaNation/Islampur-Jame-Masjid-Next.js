@@ -222,7 +222,7 @@ const AdminDashboard = () => {
   //             if (res?.data?.totalPaid) {
   //               const message = `${lastClosingYear?.data?.lastSendingYear} সাল শেষে মাসিক চাঁদার হিসাবঃ
 
-  // পরিশধিতঃ ${res?.data?.totalPaid}।
+  // পরিশোধিতঃ ${res?.data?.totalPaid}।
   // বকেয়াঃ ${userRes?.data?.Due}।
 
   // -ইসলামপুর জামে মসজিদ`;

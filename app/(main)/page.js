@@ -4,6 +4,10 @@ import Notification from "@/components/Notification";
 import { FaKaaba } from "react-icons/fa";
 import PrayerTimes from "@/components/PrayerTimes";
 import QuranSection from "@/components/QuranSection";
+export const metadata = {
+  title: "ইসলামপুর জামে মসজিদ",
+  robots: { index: false, follow: false },
+};
 
 export default function Home() {
   return (
