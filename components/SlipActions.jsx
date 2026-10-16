@@ -44,13 +44,6 @@ export default function SlipActions({ targetId = "slip", fileName = "slip" }) {
     <div className="flex flex-wrap justify-center gap-2 mt-4 print:hidden">
       <button
         type="button"
-        onClick={() => window.print()}
-        className={`${btn} text-white bg-[#0f3d2e] hover:bg-[#0c3226]`}
-      >
-        প্রিন্ট
-      </button>
-      <button
-        type="button"
         onClick={() => download("png")}
         disabled={busy !== null}
         className={`${btn} text-white bg-[#2f7d57] hover:bg-[#276b4a]`}
