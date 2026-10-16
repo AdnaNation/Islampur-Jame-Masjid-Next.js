@@ -7,7 +7,7 @@
     margin: 10mm;
   }
 
-  body * {
+  body:has(#slip) * {
     visibility: hidden;
   }
 
@@ -15,7 +15,7 @@
   #slip * {
     visibility: visible;
     -webkit-print-color-adjust: exact;
-    print-color-adjust: exact; 
+    print-color-adjust: exact;
   }
 
   #slip {

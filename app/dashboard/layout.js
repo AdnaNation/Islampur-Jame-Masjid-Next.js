@@ -15,9 +15,11 @@ function DashboardLayout({ children }) {
   };
   return (
     <div>
-      <Navbar />
+      <div className="print:hidden">
+        <Navbar />
+      </div>
       <div className="flex">
-        <div>
+        <div className="print:hidden">
           <div className="hidden min-h-screen border-r-2 shadow-sm md:block bg-zinc-100 md:min-w-56">
             <div className="flex flex-col gap-3">
               <Link href="/dashboard/home">এডমিন হোম</Link>
@@ -26,6 +28,7 @@ function DashboardLayout({ children }) {
               <Link href="/dashboard/link-visits">লিংক হিস্টোরি</Link>
               <Link href="/dashboard/addUser">অ্যাড ইউজার</Link>
               <Link href="/dashboard/rent">দোকান ভাড়া</Link>
+              <Link href="/dashboard/ledger">বার্ষিক তালিকা (PDF)</Link>
             </div>
           </div>
           <div
@@ -66,12 +69,19 @@ function DashboardLayout({ children }) {
               <Link onClick={handleToggle} href="/dashboard/rent">
                 দোকান ভাড়া
               </Link>
+              <Link onClick={handleToggle} href="/dashboard/ledger">
+                বার্ষিক তালিকা (PDF)
+              </Link>
             </div>
           </div>
         </div>
-        <div className="flex-grow bg-orange-50">{children}</div>
+        <div className="flex-grow min-w-0 bg-orange-50 print:bg-white">
+          {children}
+        </div>
       </div>
-      <Footer />
+      <div className="print:hidden">
+        <Footer />
+      </div>
     </div>
   );
 }
