@@ -17,7 +17,7 @@ const TYPE_LABEL = {
   Due: "বকেয়া চাঁদা",
 };
 
-const METHOD_LABEL = { cash: "ক্যাশ", bkash: "বিকাশ" };
+const METHOD_LABEL = { cash: "ক্যাশ", bkash: "বিকাশ", nagad: "নগদ" };
 
 function formatDateTime(iso) {
   const parts = Object.fromEntries(

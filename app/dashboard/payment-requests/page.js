@@ -31,9 +31,11 @@ const PaymentRequestsPage = () => {
       .filter(Boolean)
       .join(", ");
 
+    const methodLabel = claim.method === "nagad" ? "Nagad" : "bKash";
+
     const confirm = await Swal.fire({
       title: "নিশ্চিত করুন",
-      html: `<b>${claim.name}</b> (${claim.home})<br/>${breakdown}<br/>মোট প্রাপ্ত: ৳${claim.sentAmount}<br/>TrxID: <b>${claim.trxID}</b><br/><br/>আপনার bKash অ্যাপে এই TrxID এবং টাকার পরিমাণ মিলিয়ে দেখেছেন তো?`,
+      html: `<b>${claim.name}</b> (${claim.home})<br/>${breakdown}<br/>মোট প্রাপ্ত: ৳${claim.sentAmount}<br/>TrxID: <b>${claim.trxID}</b><br/><br/>আপনার ${methodLabel} অ্যাপে এই TrxID এবং টাকার পরিমাণ মিলিয়ে দেখেছেন তো?`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "হ্যাঁ, অনুমোদন করুন",
@@ -146,7 +148,8 @@ const PaymentRequestsPage = () => {
                 মোট: ৳{claim.totalAmount} (পাঠানো হয়েছে ৳{claim.sentAmount})
               </p>
               <p className="text-gray-500">
-                পাঠানো নাম্বার: {claim.senderNumber} · TrxID:{" "}
+                পাঠানো নাম্বার: {claim.senderNumber} ·{" "}
+                {claim.method === "nagad" ? "Nagad" : "bKash"} TrxID:{" "}
                 <span className="font-mono">{claim.trxID}</span>
               </p>
               <p className="text-xs text-gray-400">

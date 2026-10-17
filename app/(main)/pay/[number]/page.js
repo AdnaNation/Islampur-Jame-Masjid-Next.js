@@ -11,6 +11,10 @@ import PaymentHistory from "@/components/PaymentHistory";
 
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
 const WHATSAPP_NUMBER = "8801776236285";
+const METHODS = {
+  bkash: { label: "bKash", rate: 0.015, color: "#E2136E" },
+  nagad: { label: "Nagad", rate: 0.013, color: "#F6921E" },
+};
 
 const DirectPaymentPage = () => {
   const { number } = useParams();
@@ -19,7 +23,7 @@ const DirectPaymentPage = () => {
 
   // step: "loading" -> "select" | "noDue" | "notFound" -> "confirm" -> "done"
   const [step, setStep] = useState("loading");
-
+  const [method, setMethod] = useState("bkash");
   const [user, setUser] = useState(null);
   const [copied, setCopied] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
@@ -87,7 +91,7 @@ const DirectPaymentPage = () => {
   const dueAmountValue = payDueChecked ? Number(dueAmount || 0) : 0;
   const totalAmount = monthlyAmount + tarabiAmount + dueAmountValue;
 
-  const CASHOUT_CHARGE_RATE = 0.015;
+  const CASHOUT_CHARGE_RATE = METHODS[method].rate;
   const charge = Math.round(totalAmount * CASHOUT_CHARGE_RATE);
   const totalToSend = totalAmount + charge;
 
@@ -106,7 +110,9 @@ const DirectPaymentPage = () => {
   };
 
   const getWhatsappLink = () => {
-    const parts = ["আসসালামু আলাইকুম, আমার bKash পেমেন্টে সাহায্য দরকার।"];
+    const parts = [
+      `আসসালামু আলাইকুম, আমার ${METHODS[method].label} পেমেন্টে সাহায্য দরকার।`,
+    ];
     if (user) parts.push(`নামঃ ${user.NameBn} (${user.HomeName})`);
     if (totalToSend) parts.push(`পরিমাণঃ ৳${totalToSend}`);
     if (trxID) parts.push(`TrxID: ${trxID}`);
@@ -123,6 +129,7 @@ const DirectPaymentPage = () => {
         userId: user._id,
         name: user.NameBn,
         home: user.HomeName,
+        method,
         senderNumber: senderNumber.trim(),
         trxID: trxID.trim(),
         totalAmount,
@@ -315,8 +322,32 @@ const DirectPaymentPage = () => {
             </p>
           </div>
 
+          <div className="grid grid-cols-2 gap-2">
+            {Object.entries(METHODS).map(([key, m]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setMethod(key)}
+                className="btn btn-sm"
+                style={
+                  method === key
+                    ? {
+                        backgroundColor: m.color,
+                        borderColor: m.color,
+                        color: "#fff",
+                      }
+                    : {}
+                }
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
           <div className="p-4 space-y-2 text-center border rounded-lg bg-emerald-50 border-emerald-200">
-            <p className="text-sm">নিচের নাম্বারে bKash অ্যাপ থেকে</p>
+            <p className="text-sm">
+              নিচের নাম্বারে {METHODS[method].label} অ্যাপ থেকে
+            </p>
             <p className="text-sm font-semibold">
               &ldquo;Send Money&rdquo; করুন
             </p>
@@ -352,8 +383,9 @@ const DirectPaymentPage = () => {
             </div>
           </div>
           <p className="text-xs text-center text-gray-500">
-            টাকা পাঠানোর পর আপনার bKash অ্যাপে দেখানো Transaction ID (TrxID)
-            নিচে লিখুন। অ্যাডমিন যাচাই করার পর আপনার চাঁদা আপডেট হবে।
+            টাকা পাঠানোর পর আপনার {METHODS[method].label} অ্যাপে দেখানো
+            Transaction ID (TrxID) নিচে লিখুন। অ্যাডমিন যাচাই করার পর আপনার
+            চাঁদা আপডেট হবে।
           </p>
 
           <form onSubmit={handleSubmitClaim} className="space-y-3">

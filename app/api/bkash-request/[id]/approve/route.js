@@ -29,6 +29,8 @@ export async function PATCH(request, { params }) {
     );
   }
 
+  const isNagad = claim.method === "nagad";
+
   const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
   const year = new Date().getFullYear();
   const messageParts = [];
@@ -55,7 +57,7 @@ export async function PATCH(request, { params }) {
       type: "Monthly",
       time,
       year,
-      method: "bKash",
+      method: isNagad ? "Nagad" : "bKash",
       trxID: claim.trxID,
       senderNumber: claim.senderNumber,
       combinedTotal: claim.totalAmount,
@@ -85,7 +87,7 @@ export async function PATCH(request, { params }) {
       type: "Tarabi",
       time,
       year,
-      method: "bKash",
+      method: isNagad ? "Nagad" : "bKash",
       trxID: claim.trxID,
       senderNumber: claim.senderNumber,
       combinedTotal: claim.totalAmount,
@@ -112,7 +114,7 @@ export async function PATCH(request, { params }) {
       type: "Due",
       time,
       year,
-      method: "bKash",
+      method: isNagad ? "Nagad" : "bKash",
       trxID: claim.trxID,
       senderNumber: claim.senderNumber,
       combinedTotal: claim.totalAmount,
@@ -138,7 +140,7 @@ export async function PATCH(request, { params }) {
     name: claim.name,
     home: claim.home,
     items: slipItems,
-    method: "bkash",
+    method: isNagad ? "nagad" : "bkash",
     trxID: claim.trxID,
   });
 
