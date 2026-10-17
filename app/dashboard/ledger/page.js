@@ -65,7 +65,6 @@ function LedgerView() {
       const token = getLocalStorage("access-token");
       const res = await axiosPublic.get("/ledger", {
         params: { year, ...(home ? { home } : {}) },
-        headers: { authorization: `Bearer ${token}` },
       });
       return res.data;
     },
