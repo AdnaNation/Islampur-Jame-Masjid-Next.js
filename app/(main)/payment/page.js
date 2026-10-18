@@ -3,10 +3,66 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { FiLoader } from "react-icons/fi";
+import {
+  MdCalendarMonth,
+  MdHistory,
+  MdMoneyOff,
+  MdNightsStay,
+  MdPayments,
+  MdSearchOff,
+} from "react-icons/md";
 import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
 import useAdmin from "@/hooks/useAdmin";
+
+const fmt = (n) => (Number(n) || 0).toLocaleString("en-IN");
+
+const TYPE_META = {
+  Monthly: {
+    Icon: MdCalendarMonth,
+    bar: "from-emerald-500 to-emerald-300",
+    chip: "bg-emerald-50 text-emerald-600",
+    amount: "text-emerald-700",
+  },
+  Tarabi: {
+    Icon: MdNightsStay,
+    bar: "from-amber-500 to-amber-300",
+    chip: "bg-amber-50 text-amber-600",
+    amount: "text-amber-700",
+  },
+  Due: {
+    Icon: MdMoneyOff,
+    bar: "from-rose-500 to-rose-300",
+    chip: "bg-rose-50 text-rose-600",
+    amount: "text-rose-700",
+  },
+};
+const FALLBACK_META = {
+  Icon: MdPayments,
+  bar: "from-gray-400 to-gray-300",
+  chip: "bg-gray-100 text-gray-500",
+  amount: "text-gray-700",
+};
+
+const METHOD_STYLE = {
+  bkash: "bg-[#E2136E]",
+  nagad: "bg-[#F6921E]",
+  bank: "bg-teal-600",
+};
+const methodClass = (m) =>
+  METHOD_STYLE[String(m).toLowerCase()] || "bg-gray-500";
+
+function formatTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value || "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const hours = date.getHours();
+  const ampm = hours >= 12 ? "PM" : "AM";
+  return `${day}/${month}/${date.getFullYear()} ${hours % 12 || 12}:${minutes} ${ampm}`;
+}
 
 const PaymentHistory = () => {
   const [isAdmin] = useAdmin();
@@ -109,157 +165,205 @@ const PaymentHistory = () => {
     }
   };
 
+  const list = data?.data?.slice().reverse() || [];
+
   return (
-    <div className="min-h-screen bg-orange-50">
-      {isAdmin && (
-        <div className="flex justify-center pt-2">
-          <div className="tabs tabs-boxed w-fit">
-            <button
-              className={`tab ${tab === "active" ? "tab-active" : ""}`}
-              onClick={() => setTab("active")}
-            >
-              পেমেন্ট হিস্টোরি
-            </button>
-            <button
-              className={`tab ${tab === "reverted" ? "tab-active" : ""}`}
-              onClick={() => setTab("reverted")}
-            >
-              বাতিলকৃত পেমেন্ট
-            </button>
+    <div className="min-h-screen bg-[#f7f5ef]">
+      {/* Banner */}
+      <div className="bg-gradient-to-b from-[#0f3d2e] to-[#14523d] px-4 pt-8 pb-16 text-center text-white">
+        <MdHistory className="mx-auto mb-1 text-3xl text-amber-300" />
+        <h1 className="text-2xl font-bold">
+          {tab === "reverted" ? "বাতিলকৃত পেমেন্ট" : "পেমেন্ট হিস্টোরি"}
+        </h1>
+        <p className="mt-1 text-sm text-white/70">
+          ইসলামপুর জামে মসজিদের চাঁদা পরিশোধের তালিকা
+        </p>
+
+        {isAdmin && (
+          <div className="inline-flex p-1 mt-4 rounded-full bg-white/10">
+            {[
+              ["active", "পেমেন্ট হিস্টোরি"],
+              ["reverted", "বাতিলকৃত পেমেন্ট"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  tab === key
+                    ? "bg-white text-[#0f3d2e] shadow"
+                    : "text-white/80 hover:text-white"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        </div>
-      )}
-
-      <div className="flex justify-center gap-1 my-1">
-        <select onChange={handleHome} className="w-40 p-2 border rounded">
-          <option value="home" className="font-bold bg-red-50">
-            বাড়ির নাম
-          </option>
-          {homeName.map((home) => (
-            <option value={home} key={home}>
-              {" "}
-              {home}
-            </option>
-          ))}
-        </select>
-
-        <select
-          disabled={home === "home"}
-          onChange={handleName}
-          className="w-40 p-2 border rounded"
-        >
-          <option value="" className="font-bold bg-red-50">
-            নাম
-          </option>
-          {userName?.data?.map((name) => (
-            <option value={name.NameBn} key={name._id}>
-              {" "}
-              {name.NameBn}
-            </option>
-          ))}
-        </select>
+        )}
       </div>
 
-      {isAdmin && tab === "active" && (
-        <p className="flex justify-end mr-6">
-          {Math.floor(totalFeeCurrentYear) || 0}{" "}
-        </p>
-      )}
+      <div className="max-w-5xl px-4 pb-10 mx-auto -mt-10">
+        {/* Filters */}
+        <div className="p-4 bg-white shadow-md rounded-2xl">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <select
+              onChange={handleHome}
+              className="w-full select select-bordered"
+            >
+              <option value="home">সব বাড়ি</option>
+              {homeName.map((home) => (
+                <option value={home} key={home}>
+                  {home}
+                </option>
+              ))}
+            </select>
 
-      {data?.data?.length === 0 && (
-        <div className="mt-24 mx-auto w-full max-w-72 flex flex-wrap items-center justify-center py-3 pl-4 rounded-lg text-base font-medium [transition:all_0.5s_ease] border-solid border border-[#f85149] text-[#b22b2b] [&_svg]:text-[#b22b2b] group bg-[linear-gradient(#f851491a,#f851491a)]">
-          <div className="flex flex-row items-center mr-auto gap-x-2">
-            <p className="text-xs">
+            <select
+              disabled={home === "home"}
+              onChange={handleName}
+              className="w-full select select-bordered"
+            >
+              <option value="">
+                {home === "home" ? "আগে বাড়ি বেছে নিন" : "সব সদস্য"}
+              </option>
+              {userName?.data?.map((name) => (
+                <option value={name.NameBn} key={name._id}>
+                  {name.NameBn}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {data?.data && (
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="px-4 py-2 rounded-xl bg-stone-50">
+                <p className="text-xs text-gray-500">মোট পেমেন্ট</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {fmt(list.length)} টি
+                </p>
+              </div>
+              {isAdmin && tab === "active" && (
+                <div className="px-4 py-2 rounded-xl bg-emerald-50">
+                  <p className="text-xs text-emerald-700">
+                    {currentYear} সালের মোট
+                  </p>
+                  <p className="text-lg font-bold text-[#0f3d2e]">
+                    ৳{fmt(Math.floor(totalFeeCurrentYear))}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* States */}
+        {isPending && (
+          <div className="flex justify-center mt-16 text-3xl text-gray-400 animate-spin">
+            <FiLoader />
+          </div>
+        )}
+
+        {data?.data?.length === 0 && (
+          <div className="max-w-sm p-6 mx-auto mt-10 text-center bg-white border border-rose-100 shadow-sm rounded-2xl">
+            <MdSearchOff className="mx-auto text-4xl text-rose-400" />
+            <p className="mt-2 text-sm font-medium text-rose-700">
               {tab === "reverted"
                 ? "কোনো বাতিলকৃত পেমেন্ট নেই!"
-                : `${name}'র কোনো পেমেন্ট হিস্টোরি নেই!`}
+                : `${name.trim() ? name + "'র" : "এই বাড়ির"} কোনো পেমেন্ট হিস্টোরি নেই!`}
             </p>
           </div>
-        </div>
-      )}
+        )}
 
-      {isPending && (
-        <div className="flex justify-center mt-40 text-3xl animate-spin">
-          <FiLoader />
-        </div>
-      )}
-      <div className="flex justify-center">
-        <div className="grid items-center justify-center max-w-5xl gap-2 md:grid-cols-2 lg:grid-cols-3 bg-orange-50 ">
-          {data?.data
-            ?.slice()
-            .reverse()
-            .map((history) => (
+        {/* List */}
+        <div className="grid gap-3 mt-4 md:grid-cols-2 lg:grid-cols-3">
+          {list.map((history) => {
+            const meta = TYPE_META[history.type] || FALLBACK_META;
+            const reverted = tab === "reverted";
+
+            const showRevert =
+              tab === "active" && isAdmin && canRevert(history);
+
+            return (
               <div
                 key={history._id}
-                className="mx-2 mt-1 shadow-sm h-36 card bg-base-100 md:w-80 md:mx-0"
+                className={`overflow-hidden bg-white shadow-sm rounded-2xl ${
+                  reverted ? "opacity-70" : ""
+                }`}
               >
-                <div className="p-5 ">
-                  {/* <h2 className=" text-right text-[12px]">{history.time}</h2> */}
+                <div className={`h-1.5 bg-gradient-to-r ${meta.bar}`} />
 
-                  <div className="flex justify-end gap-1">
-                    {tab === "reverted" && (
-                      <p className="px-2 text-[10px] text-center text-white bg-gray-500 rounded-lg">
-                        বাতিলকৃত
-                      </p>
-                    )}
-                    {history?.method && (
-                      <p className="w-12 text-[10px] text-center text-white bg-red-500 rounded-lg right-1">
-                        {history.method}
-                      </p>
-                    )}
+                <div className="p-4">
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-gray-400">
+                    <span>{formatTime(history.time)}</span>
+                    <span className="flex gap-1">
+                      {reverted && (
+                        <span className="px-2 py-0.5 text-[10px] font-semibold text-white bg-gray-500 rounded-full">
+                          বাতিলকৃত
+                        </span>
+                      )}
+                      {history.method && (
+                        <span
+                          className={`px-2 py-0.5 text-[10px] font-semibold text-white rounded-full ${methodClass(
+                            history.method,
+                          )}`}
+                        >
+                          {history.method}
+                        </span>
+                      )}
+                    </span>
                   </div>
 
-                  <h2 className="text-right text-[12px]">
-                    {(() => {
-                      const date = new Date(history.time);
-                      const day = String(date.getDate()).padStart(2, "0");
-                      const month = String(date.getMonth() + 1).padStart(
-                        2,
-                        "0",
-                      );
-                      const year = date.getFullYear();
-                      let hours = date.getHours();
-                      const minutes = String(date.getMinutes()).padStart(
-                        2,
-                        "0",
-                      );
-                      const ampm = hours >= 12 ? "PM" : "AM";
-                      hours = hours % 12 || 12;
-                      const formattedTime = `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
-                      return formattedTime;
-                    })()}
-                  </h2>
+                  <div className="flex items-start gap-3 mt-3">
+                    <div
+                      className={`flex items-center justify-center w-10 h-10 text-xl rounded-full shrink-0 ${meta.chip}`}
+                    >
+                      <meta.Icon />
+                    </div>
 
-                  <p
-                    className={
-                      tab === "reverted" ? "line-through opacity-60" : ""
-                    }
-                  >
-                    {history.name} (
-                    <small className="mr-1">{history.home}</small>){" "}
-                    <small>{history.monthName && history.monthName}</small>{" "}
-                    {history.type === "Monthly" && "মাসের মাসিক চাঁদা"}
-                    {history.type === "Tarabi" && "তারাবীর"}{" "}
-                    {history.type === "Due" && "বকেয়ার"} {history.fee} টাকা
-                    পরিশোধ করেছেন।{" "}
-                  </p>
+                    <p
+                      className={`text-[15px] leading-relaxed text-gray-600 ${
+                        reverted ? "line-through" : ""
+                      }`}
+                    >
+                      <b className="text-gray-900">{history.name}</b>{" "}
+                      <small className="text-gray-400">({history.home})</small>{" "}
+                      <small className="font-medium text-gray-700">
+                        {history.monthName && history.monthName}
+                      </small>{" "}
+                      {history.type === "Monthly" && "মাসের মাসিক চাঁদা"}
+                      {history.type === "Tarabi" && "তারাবীর"}{" "}
+                      {history.type === "Due" && "বকেয়ার"}{" "}
+                      <b className={`text-lg ${meta.amount}`}>
+                        {history.fee} টাকা
+                      </b>{" "}
+                      পরিশোধ করেছেন।
+                    </p>
+                  </div>
+                </div>
 
-                  {tab === "active" && isAdmin && canRevert(history) && (
-                    <div className="flex items-center justify-end mt-2">
+                {showRevert && (
+                  <>
+                    {/* perforated ticket divider */}
+                    <div className="relative">
+                      <div className="mx-4 border-t border-dashed" />
+                      <span className="absolute w-4 h-4 rounded-full -left-2 -top-2 bg-[#f7f5ef]" />
+                      <span className="absolute w-4 h-4 rounded-full -right-2 -top-2 bg-[#f7f5ef]" />
+                    </div>
+                    <div className="flex justify-end px-4 py-3">
                       <button
                         disabled={revertingId === history._id}
                         onClick={() => handleRevert(history)}
-                        className="text-[10px] px-2 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200 disabled:opacity-50 absolute bottom-2 right-4"
+                        className="px-3 py-1 text-xs font-medium text-red-600 rounded-full bg-red-50 hover:bg-red-100 disabled:opacity-50"
                       >
                         {revertingId === history._id
                           ? "বাতিল হচ্ছে..."
                           : "বাতিল করুন"}
                       </button>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
-            ))}
+            );
+          })}
         </div>
       </div>
     </div>

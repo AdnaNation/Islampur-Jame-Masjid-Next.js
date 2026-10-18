@@ -9,8 +9,10 @@ import { FaAmazonPay, FaHistory } from "react-icons/fa";
 import useAdmin from "@/hooks/useAdmin";
 import { getLocalStorage, removeLocalStorage } from "@/lib/localStorage";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
+  const router = useRouter();
   const [userNumber, setUserNumber] = useState(null);
   const [isAdmin] = useAdmin();
 
@@ -64,7 +66,7 @@ const Navbar = () => {
                 onClick={() => {
                   removeLocalStorage("Number");
                   setUserNumber(null);
-                  navigate("/signin");
+                  router.push("/signin");
                 }}
                 className="text-xl md:text-2xl"
               >
