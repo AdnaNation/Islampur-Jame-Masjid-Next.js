@@ -2,15 +2,13 @@ import { ObjectId } from "mongodb";
 import { getCollections } from "@/lib/mongodb";
 
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const FB_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
 
 const GREETING = `আসসালামু আলাইকুম।\n\n🕌 *ইসলামপুর জামে মসজিদ* সেবায় আপনাকে স্বাগতম।\n\nসহজে তথ্য পেতে নিচের নম্বর বা কিওয়ার্ডগুলো লিখে মেসেজ দিন:\n\n1️⃣ *Due* (বা ১) - বকেয়া জানতে\n2️⃣ *Contact* (বা ২) - কমিটির সাথে যোগাযোগ\n3️⃣ *Namaz* (বা ৩) - নামাজের সময়সূচি\n\n_যেকোনো সময় প্রধান মেনুতে ফিরতে *Menu* বা *0* লিখুন।_`;
 
 const CONTACT = `📞 *মসজিদ কমিটির সাথে যোগাযোগ*\n\n• *সাধারণ সম্পাদক:*\n 01730183325 (আরমান স্যার)\n• *সহ-সাধারণ সম্পাদক:*\n 01776236285 (আদনান)\n*WhatsApp কমিউনিটি:*\n *https://chat.whatsapp.com/Jaxo7XIK62DIoSw0qaSyVV*\n\nজরুরি প্রয়োজনে সরাসরি কল/ম্যাসেজ দেয়ার অনুরোধ করা যাচ্ছে।`;
 
 const FALLBACK = `দুঃখিত, আপনার উত্তরটি বোঝা যায়নি। \n\nমূল মেনুতে ফিরতে *Menu* বা *Hi* লিখুন, বকেয়া জানতে *Due* অথবা নামাজের সময় জানতে *Namaz* লিখুন।`;
-
-// Jummah isn't stored in the DB. Edit it here, or set to "" to hide it.
-const JUMMAH_TIME = "১:৩০ মি.";
 
 const bnMap = {
   "০": "0",
@@ -31,10 +29,8 @@ const normalize = (s = "") =>
     .toLowerCase();
 const byBn = (a, b) => (a || "").localeCompare(b || "", "bn");
 const clip = (t) => (t.length > 3900 ? t.slice(0, 3850) + "\n…" : t);
-
 const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
 const toBnDigits = (s) => String(s).replace(/\d/g, (d) => BN_DIGITS[d]);
-
 const dhakaMonthIndex = () =>
   Number(
     new Intl.DateTimeFormat("en-US", {
@@ -43,21 +39,17 @@ const dhakaMonthIndex = () =>
     }).format(new Date()),
   ) - 1;
 
-async function send(to, body) {
-  if (!to) {
-    console.error("SEND ABORT: to empty");
-    return;
-  }
+// --- SENDERS ---
+async function sendWhatsApp(to, body) {
+  if (!to) return;
   const isUserId = String(to).includes(".");
   let finalTo = String(to).trim();
-
   if (!isUserId) {
     let clean = finalTo.replace(/[^\d]/g, "");
     if (clean.startsWith("00")) clean = clean.slice(2);
     if (clean.startsWith("0")) clean = "88" + clean;
     finalTo = clean;
   }
-
   const res = await fetch(
     `https://graph.facebook.com/v26.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
     {
@@ -75,9 +67,26 @@ async function send(to, body) {
     },
   );
   const txt = await res.text();
-  if (!res.ok) console.error("WhatsApp send failed:", res.status, txt);
+  if (!res.ok) console.error("WA send failed:", txt);
 }
 
+async function sendMessenger(psid, text) {
+  const res = await fetch(
+    `https://graph.facebook.com/v22.0/${process.env.FB_PAGE_ID}/messages?access_token=${FB_TOKEN}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipient: { id: psid },
+        message: { text: clip(text) },
+      }),
+    },
+  );
+  const txt = await res.text();
+  if (!res.ok) console.error("FB send failed:", txt);
+}
+
+// --- YOUR EXISTING HELPERS ---
 async function tarabiActive() {
   try {
     const { userCollection } = await getCollections();
@@ -90,7 +99,6 @@ async function tarabiActive() {
     return false;
   }
 }
-
 async function homeList(userCollection) {
   const agg = await userCollection
     .aggregate([
@@ -114,7 +122,6 @@ async function homeList(userCollection) {
     "\n\n_প্রধান মেনুতে যেতে *0* বা *Menu* লিখুন।_";
   return { text, state: { step: "home", homes, users: [] } };
 }
-
 async function memberList(userCollection, home) {
   const users = await userCollection
     .find({ HomeName: home }, { projection: { NameBn: 1, Name: 1 } })
@@ -134,7 +141,6 @@ async function memberList(userCollection, home) {
     state: { step: "user", home, users: users.map((u) => String(u._id)) },
   };
 }
-
 function dueMessage(u, tarabiOn, waId) {
   const monthName = new Date().toLocaleString("en-US", { month: "long" });
   const currentYear = new Date().getFullYear();
@@ -154,7 +160,6 @@ function dueMessage(u, tarabiOn, waId) {
     "----------------------------------",
   ];
   if (total <= 0) lines.push("✅ *আলহামদুলিল্লাহ, আপনার কোনো বকেয়া নেই।*");
-
   if (unpaid > 0)
     lines.push(
       `• ${monthName}-${currentYear} পর্যন্ত বকেয়া: ৳${unpaid * rate}`,
@@ -165,12 +170,9 @@ function dueMessage(u, tarabiOn, waId) {
     "----------------------------------",
     `💰 *সর্বমোট বকেয়া:* *৳${total}*`,
   );
-
-  // শুধু নিজের নাম্বার হলে দেখাবে
   if (u.Number && waId) {
     const cleanWa = String(waId).replace(/\D/g, "");
     const cleanNum = String(u.Number).replace(/\D/g, "");
-    // শেষ 10 ডিজিট মিললেই নিজের নাম্বার
     if (cleanWa.endsWith(cleanNum.slice(-10))) {
       lines.push(
         `পরিশোধ করতে ভিজিট করুন: *islampurjamemasjid.org/pay/${u.Number}*`,
@@ -182,51 +184,100 @@ function dueMessage(u, tarabiOn, waId) {
       "\n*WhatsApp কমিউনিটি:*\n *https://chat.whatsapp.com/Jaxo7XIK62DIoSw0qaSyVV*\n",
     );
   }
-
   lines.push(
     "\n_অন্য সদস্যের তথ্য দেখতে নাম্বার লিখুন, অথবা বাড়ির তালিকায় ফিরতে *0* লিখুন।_",
   );
   return lines.join("\n");
 }
-
-// "13:15" -> "১:১৫ মি."
 function bnTime(hhmm) {
   if (!hhmm || !/^\d{1,2}:\d{2}$/.test(hhmm)) return "—";
   const [h, m] = hhmm.split(":").map(Number);
   const hour12 = h % 12 === 0 ? 12 : h % 12;
   return toBnDigits(`${hour12}:${String(m).padStart(2, "0")}`) + " মি.";
 }
-
 async function namazMessage() {
   try {
     const { prayerTimeCollection } = await getCollections();
     const doc = await prayerTimeCollection.findOne({ _id: "prayer-times" });
     const t = doc?.timings;
-
-    if (!t || !Object.keys(t).length) {
+    if (!t || !Object.keys(t).length)
       return "🕌 *নামাজের সময়সূচি*\n\nসময়সূচি এখনো আপডেট করা হয়নি।\n\n_প্রধান মেনুতে ফিরতে *Menu* বা *0* লিখুন।_";
-    }
-
-    const lines = [
+    return [
       "🕌 *নামাজের সময়সূচি*",
       "",
-      `• *ফজর:* ${bnTime(t.Fajr)}`,
-      `• *যোহর:* ${bnTime(t.Dhuhr)}`,
-      `• *আসর:* ${bnTime(t.Asr)}`,
-      `• *মাগরিব:* ${bnTime(t.Maghrib)}`,
-      `• *এশা:* ${bnTime(t.Isha)}`,
-      `• *জুমআ:* ${bnTime(t.Jummah)}`,
-    ];
-    lines.push(
+      "• *ফজর:* " + bnTime(t.Fajr),
+      "• *যোহর:* " + bnTime(t.Dhuhr),
+      "• *আসর:* " + bnTime(t.Asr),
+      "• *মাগরিব:* " + bnTime(t.Maghrib),
+      "• *এশা:* " + bnTime(t.Isha),
+      "• *জুমআ:* " + bnTime(t.Jummah),
       "",
       "_(সময়সূচি পরিবর্তন সাপেক্ষ)_",
       "_প্রধান মেনুতে ফিরতে *Menu* বা *0* লিখুন।_",
-    );
-    return lines.join("\n");
-  } catch (err) {
-    console.error("namazMessage error:", err);
-    return "দুঃখিত, নামাজের সময়সূচি এখন লোড করা যাচ্ছে না। কিছুক্ষণ পরে আবার চেষ্টা করুন।";
+    ].join("\n");
+  } catch {
+    return "দুঃখিত, নামাজের সময়সূচি এখন লোড করা যাচ্ছে না।";
   }
+}
+
+// --- CORE LOGIC (shared) ---
+async function processLogic(textRaw, session, from) {
+  const { userCollection } = await getCollections();
+  const text = normalize(textRaw);
+  const n = /^\d+$/.test(text) ? Number(text) : null;
+  const currentStep = session?.step;
+  let out;
+
+  if (
+    /^(hi|hello|hlw|hey|start|menu|মেনু|সালাম|salam)$/.test(text) ||
+    (n === 0 && !currentStep)
+  ) {
+    out = { text: GREETING, state: { step: null } };
+  } else if (n !== null && currentStep === "home") {
+    if (n === 0) out = { text: GREETING, state: { step: null } };
+    else {
+      const home = session.homes?.[n - 1];
+      out = home
+        ? await memberList(userCollection, home)
+        : {
+            text: `⚠️ নম্বরটি সঠিক নয়। 1 থেকে ${session.homes?.length || 0} এর মধ্যে দিন।`,
+            state: { step: "home", homes: session.homes },
+          };
+    }
+  } else if (n !== null && currentStep === "user") {
+    if (n === 0) out = await homeList(userCollection);
+    else {
+      const id = session.users?.[n - 1];
+      let user = null;
+      if (id)
+        try {
+          user = await userCollection.findOne({ _id: new ObjectId(id) });
+        } catch {}
+      out = user
+        ? {
+            text: dueMessage(user, await tarabiActive(), from),
+            state: {
+              step: "user",
+              home: session.home,
+              users: session.users,
+              homes: session.homes,
+            },
+          }
+        : {
+            text: `⚠️ নম্বরটি সঠিক নয়। 1 থেকে ${session.users?.length || 0} এর মধ্যে দিন।`,
+            state: { step: "user", home: session.home, users: session.users },
+          };
+    }
+  } else if (text === "1" || /^(due|বকেয়া|বাকি)$/.test(text)) {
+    out = await homeList(userCollection);
+  } else if (text === "2" || /^(contact|যোগাযোগ|কমিটি)$/.test(text)) {
+    out = { text: CONTACT, state: { step: null } };
+  } else if (text === "3" || /^(namaz|namaj|নামাজ|সময়)$/.test(text)) {
+    out = { text: await namazMessage(), state: { step: null } };
+  } else {
+    out = { text: FALLBACK, state: { step: null } };
+  }
+  return out;
 }
 
 export async function GET(req) {
@@ -243,89 +294,61 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const body = await req.json();
+    console.log("WEBHOOK:", JSON.stringify(body).slice(0, 1000));
+
+    // === 1. MESSENGER ===
+    const messaging = body.entry?.[0]?.messaging?.[0];
+    if (messaging) {
+      const psid = messaging.sender.id;
+      const messageId = messaging.message?.mid;
+      const textRaw = messaging.message?.text || "";
+
+      const { sessionCollection } = await getCollections();
+      const session = await sessionCollection.findOne({ _id: `fb_${psid}` });
+      if (session?.lastId === messageId)
+        return Response.json({ status: "duplicate" }, { status: 200 });
+
+      const out = await processLogic(textRaw, session, psid);
+
+      await sessionCollection.updateOne(
+        { _id: `fb_${psid}` },
+        {
+          $set: {
+            ...out.state,
+            lastId: messageId,
+            platform: "messenger",
+            updatedAt: new Date().toLocaleString("en-US", {
+              timeZone: "Asia/Dhaka",
+            }),
+          },
+        },
+        { upsert: true },
+      );
+      await sendMessenger(psid, out.text);
+      return Response.json({ status: "sent_fb" }, { status: 200 });
+    }
+
+    // === 2. WHATSAPP ===
     const value = body.entry?.[0]?.changes?.[0]?.value;
     const message = value?.messages?.[0];
-    console.log(message);
     if (!message)
       return Response.json({ status: "no message" }, { status: 200 });
 
-    const from =
-      message.from ||
-      message.from_user_id ||
-      value?.contacts?.[0]?.wa_id ||
-      value?.contacts?.[0]?.user_id;
-    if (!from) {
-      console.error("NO SENDER:", JSON.stringify(value));
-      return Response.json({ status: "no_sender" }, { status: 200 });
-    }
+    const from = message.from || value?.contacts?.[0]?.wa_id;
+    if (!from) return Response.json({ status: "no_sender" }, { status: 200 });
 
-    const text = normalize(
-      message.type === "text" ? (message.text?.body ?? "") : "",
-    );
-    const n = /^\d+$/.test(text) ? Number(text) : null;
-
-    const { userCollection, sessionCollection } = await getCollections();
+    const textRaw = message.type === "text" ? (message.text?.body ?? "") : "";
+    const { sessionCollection } = await getCollections();
     const session = await sessionCollection.findOne({ _id: from });
-
     if (session?.lastId === message.id)
       return Response.json({ status: "duplicate" }, { status: 200 });
 
     const isSessionExpired =
       session?.updatedAt &&
       Date.now() - new Date(session.updatedAt).getTime() > 15 * 60 * 1000;
-    const currentStep = isSessionExpired ? null : session?.step;
+    const currentSession = isSessionExpired ? { step: null } : session;
 
-    let out;
-
-    if (
-      /^(hi|hello|hlw|hey|start|menu|মেনু|সালাম|salam)$/.test(text) ||
-      (n === 0 && !currentStep)
-    ) {
-      out = { text: GREETING, state: { step: null } };
-    } else if (n !== null && currentStep === "home") {
-      if (n === 0) out = { text: GREETING, state: { step: null } };
-      else {
-        const home = session.homes?.[n - 1];
-        out = home
-          ? await memberList(userCollection, home)
-          : {
-              text: `⚠️ নম্বরটি সঠিক নয়। 1 থেকে ${session.homes?.length || 0} এর মধ্যে দিন।`,
-              state: { step: "home", homes: session.homes },
-            };
-      }
-    } else if (n !== null && currentStep === "user") {
-      if (n === 0) out = await homeList(userCollection);
-      else {
-        const id = session.users?.[n - 1];
-        let user = null;
-        if (id)
-          try {
-            user = await userCollection.findOne({ _id: new ObjectId(id) });
-          } catch {}
-        out = user
-          ? {
-              text: dueMessage(user, await tarabiActive(), from),
-              state: {
-                step: "user",
-                home: session.home,
-                users: session.users,
-                homes: session.homes,
-              },
-            }
-          : {
-              text: `⚠️ নম্বরটি সঠিক নয়। 1 থেকে ${session.users?.length || 0} এর মধ্যে দিন।`,
-              state: { step: "user", home: session.home, users: session.users },
-            };
-      }
-    } else if (text === "1" || /^(due|বকেয়া|বাকি)$/.test(text)) {
-      out = await homeList(userCollection);
-    } else if (text === "2" || /^(contact|যোগাযোগ|কমিটি)$/.test(text)) {
-      out = { text: CONTACT, state: { step: null } };
-    } else if (text === "3" || /^(namaz|namaj|নামাজ|সময়)$/.test(text)) {
-      out = { text: await namazMessage(), state: { step: null } };
-    } else {
-      out = { text: FALLBACK, state: { step: null } };
-    }
+    const out = await processLogic(textRaw, currentSession, from);
 
     await sessionCollection.updateOne(
       { _id: from },
@@ -333,6 +356,7 @@ export async function POST(req) {
         $set: {
           ...out.state,
           lastId: message.id,
+          platform: "whatsapp",
           updatedAt: new Date().toLocaleString("en-US", {
             timeZone: "Asia/Dhaka",
           }),
@@ -340,10 +364,10 @@ export async function POST(req) {
       },
       { upsert: true },
     );
-    await send(from, out.text);
-    return Response.json({ status: "sent" }, { status: 200 });
+    await sendWhatsApp(from, out.text);
+    return Response.json({ status: "sent_wa" }, { status: 200 });
   } catch (err) {
-    console.error("Webhook processing error:", err);
+    console.error("Webhook error:", err);
     return Response.json({ error: err.message }, { status: 200 });
   }
 }
