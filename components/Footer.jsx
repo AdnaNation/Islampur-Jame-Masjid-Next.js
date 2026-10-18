@@ -1,85 +1,124 @@
+import Link from "next/link";
+import Image from "next/image";
+import {
+  FaEnvelope,
+  FaFacebookF,
+  FaInstagram,
+  FaXTwitter,
+} from "react-icons/fa6";
+
+// Add `links` for a developer by pushing { Icon, href, label } items.
+const DEVELOPERS = [
+  {
+    name: "Azizul Islam Adnan",
+    avatar: "https://avatars.githubusercontent.com/u/145375204?v=4",
+    email: "azizulislamadnan@gmail.com",
+    links: [
+      {
+        Icon: FaFacebookF,
+        href: "https://www.facebook.com/AdnaNation.Me",
+        label: "Facebook",
+      },
+      {
+        Icon: FaXTwitter,
+        href: "https://x.com/AzizuIslamAdnan",
+        label: "X",
+      },
+      {
+        Icon: FaInstagram,
+        href: "https://www.instagram.com/azizul_islam_adnan",
+        label: "Instagram",
+      },
+    ],
+  },
+  {
+    name: "Muhammed Mehedi Hasan",
+    avatar: "https://avatars.githubusercontent.com/u/108600250?v=4",
+    email: "muhammedmehedih@gmail.com",
+    links: [],
+  },
+];
+
 const Footer = () => {
   return (
-    <footer className="py-10 text-white bg-gray-900">
-      <div className="container flex flex-col items-center mx-auto">
-        {/* Developed By Section */}
-        <div className="mb-8 text-center">
-          <p className="text-lg font-semibold text-gray-300">Developed by</p>
-        </div>
-
-        <div className="flex flex-col items-center justify-center space-y-8 md:flex-row md:space-x-10 md:space-y-0">
-          {/* First Profile Card */}
-          <div className="flex items-center p-6 bg-gray-800 rounded-lg shadow-md">
-            <img
-              src="https://avatars.githubusercontent.com/u/108600250?v=4"
-              alt="Profile 1"
-              className="w-24 h-24 mb-4 rounded-full"
-            />
-            <div className="flex flex-col space-x-5">
-              <h3 className="mb-2 ml-5 text-lg font-semibold">
-                Muhammed Mehedi Hasan
-              </h3>
-              <div className="flex mb-2 space-x-4">
-                <a href="" className="text-blue-500 hover:text-blue-400">
-                  <i className="fab fa-facebook-f"></i>
-                </a>
-                <a href="" className="text-blue-400 hover:text-blue-300">
-                  <i className="fab fa-twitter"></i>
-                </a>
-                <a href="" className="text-pink-500 hover:text-pink-400">
-                  <i className="fab fa-instagram"></i>
-                </a>
-              </div>
-              <p className="text-sm">muhammedmehedih@gmail.com</p>
-            </div>
-          </div>
-
-          {/* Vertical Line */}
-          <div className="hidden w-px h-32 bg-gray-700 md:block"></div>
-
-          {/* Second Profile Card */}
-          <div className="flex items-center p-6 bg-gray-800 rounded-lg shadow-md">
-            <img
-              src="https://avatars.githubusercontent.com/u/145375204?v=4"
-              alt="Profile 2"
-              className="w-24 h-24 mb-4 rounded-full"
-            />
-            <div className="flex flex-col space-x-5">
-              <h3 className="mb-2 ml-5 text-lg font-semibold">
-                Azizul Islam Adnan
-              </h3>
-              <div className="flex mb-2 space-x-4">
-                <a
-                  href="https://www.facebook.com/AdnaNation.Me"
-                  className="text-blue-500 hover:text-blue-400"
-                >
-                  <i className="fab fa-facebook-f"></i>
-                </a>
-                <a
-                  href="https://x.com/AzizuIslamAdnan"
-                  className="text-blue-400 hover:text-blue-300"
-                >
-                  <i className="fab fa-twitter"></i>
-                </a>
-                <a
-                  href="https://www.instagram.com/azizul_islam_adnan"
-                  className="text-pink-500 hover:text-pink-400"
-                >
-                  <i className="fab fa-instagram"></i>
-                </a>
-              </div>
-              <p className="text-sm">azizulislamadnan@gmail.com</p>
-            </div>
+    <footer className="text-white bg-[#0a2c21]">
+      <div className="max-w-4xl px-4 py-10 mx-auto">
+        {/* Mosque */}
+        <div className="text-center">
+          <Image
+            src="/logo.jpg"
+            alt="ইসলামপুর জামে মসজিদ"
+            width={56}
+            height={56}
+            className="mx-auto mb-3 rounded-full ring-2 ring-white/20"
+          />
+          <h2 className="text-lg font-bold">ইসলামপুর জামে মসজিদ</h2>
+          <p className="mt-1 text-sm text-white/60">দুধমুখা, দাগনভূঞা, ফেনী</p>
+          <div className="flex justify-center gap-5 mt-4 text-sm">
+            <Link href="/pay" className="text-amber-300 hover:underline">
+              চাঁদা পরিশোধ
+            </Link>
+            <Link href="/payment" className="text-amber-300 hover:underline">
+              পেমেন্ট হিস্টোরি
+            </Link>
           </div>
         </div>
 
-        {/* Copyright Section */}
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-400">
-            &copy; {new Date().getFullYear()} Islampur Jame Masjid. All rights
-            reserved.
-          </p>
+        <div className="h-px my-8 bg-white/10" />
+
+        {/* Developers */}
+        <p className="mb-4 text-xs tracking-widest text-center uppercase text-white/50">
+          Developed by
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {DEVELOPERS.map((dev) => (
+            <div
+              key={dev.name}
+              className="flex items-center min-w-0 gap-4 p-4 rounded-xl bg-white/5"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={dev.avatar}
+                alt={dev.name}
+                width={64}
+                height={64}
+                loading="lazy"
+                className="object-cover w-16 h-16 rounded-full shrink-0"
+              />
+              <div className="min-w-0">
+                <h3 className="font-semibold leading-snug">{dev.name}</h3>
+                <a
+                  href={`mailto:${dev.email}`}
+                  className="flex items-start gap-1.5 mt-1 text-xs break-all text-white/70 hover:text-white"
+                >
+                  <FaEnvelope className="mt-0.5 shrink-0" />
+                  {dev.email}
+                </a>
+                {dev.links.length > 0 && (
+                  <div className="flex gap-2 mt-2">
+                    {dev.links.map(({ Icon, href, label }) => (
+                      <a
+                        key={label}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${dev.name} on ${label}`}
+                        className="flex items-center justify-center w-8 h-8 text-sm rounded-full bg-white/10 hover:bg-white/20"
+                      >
+                        <Icon />
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
+
+        <p className="mt-8 text-xs text-center text-white/40">
+          &copy; {new Date().getFullYear()} Islampur Jame Masjid. All rights
+          reserved.
+        </p>
       </div>
     </footer>
   );
