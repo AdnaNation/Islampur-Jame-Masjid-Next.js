@@ -72,7 +72,7 @@ async function sendWhatsApp(to, body) {
 
 async function sendMessenger(psid, text) {
   const res = await fetch(
-    `https://graph.facebook.com/v22.0/${process.env.FB_PAGE_ID}/messages?access_token=${FB_TOKEN}`,
+    `https://graph.facebook.com/v26.0/${process.env.FB_PAGE_ID}/messages?access_token=${FB_TOKEN}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
