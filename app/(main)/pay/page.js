@@ -14,7 +14,7 @@ const WHATSAPP_NUMBER = "8801776236285";
 
 const METHODS = {
   bkash: { label: "bKash", rate: 0.015, color: "#E2136E", type: "mobile" },
-  nagad: { label: "Nagad", rate: 0.015, color: "#F6921E", type: "mobile" },
+  nagad: { label: "Nagad", rate: 0.013, color: "#F6921E", type: "mobile" },
   bank: { label: "Bank", rate: 0, color: "#0F766E", type: "bank" },
 };
 
