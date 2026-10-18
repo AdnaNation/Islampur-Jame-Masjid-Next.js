@@ -25,7 +25,7 @@ export async function POST(request) {
     userId: claim.userId || null,
     name: claim.name || null,
     home: claim.home || null,
-    method: claim.method === "nagad" ? "nagad" : "bkash",
+    method: ["nagad", "bank"].includes(claim.method) ? claim.method : "bkash",
     senderNumber: claim.senderNumber,
     trxID: claim.trxID.trim().toUpperCase(),
     totalAmount: Number(claim.totalAmount),

@@ -12,8 +12,17 @@ import PaymentHistory from "@/components/PaymentHistory";
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
 const WHATSAPP_NUMBER = "8801776236285";
 const METHODS = {
-  bkash: { label: "bKash", rate: 0.015, color: "#E2136E" },
-  nagad: { label: "Nagad", rate: 0.013, color: "#F6921E" },
+  bkash: { label: "bKash", rate: 0.015, color: "#E2136E", type: "mobile" },
+  nagad: { label: "Nagad", rate: 0.015, color: "#F6921E", type: "mobile" },
+  bank: { label: "Bank", rate: 0, color: "#0F766E", type: "bank" },
+};
+
+const BANK = {
+  bankName: "Islami Bank Bangladesh PLC",
+  branch: "Dudmukha Bazar Sub-Branch,Bashurhat",
+  accountName: "AZIZUL ISLAM",
+  accountNumber: "20506490200253503",
+  routing: "125750251",
 };
 
 const DirectPaymentPage = () => {
@@ -99,6 +108,11 @@ const DirectPaymentPage = () => {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(BKASH_NUMBER);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  const handleCopyAccount = () => {
+    navigator.clipboard.writeText(BANK.accountNumber);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -318,7 +332,9 @@ const DirectPaymentPage = () => {
               <p>বকেয়া - ৳{dueAmountValue}</p>
             )}
             <p className="pt-1 font-semibold border-t">
-              মোট - ৳{totalAmount} + ক্যাশআউট চার্জ (১.৫%)
+              মোট - ৳{totalAmount}
+              {METHODS[method].rate > 0 &&
+                ` + ক্যাশআউট চার্জ (${(METHODS[method].rate * 100).toLocaleString("bn-BD")}%)`}
             </p>
           </div>
 
@@ -344,55 +360,113 @@ const DirectPaymentPage = () => {
             ))}
           </div>
 
-          <div className="p-4 space-y-2 text-center border rounded-lg bg-emerald-50 border-emerald-200">
-            <p className="text-sm">
-              নিচের নাম্বারে {METHODS[method].label} অ্যাপ থেকে
-            </p>
-            <p className="text-sm font-semibold">
-              &ldquo;Send Money&rdquo; করুন
-            </p>
+          {METHODS[method].type === "mobile" ? (
+            <div className="p-4 space-y-2 text-center border rounded-lg bg-emerald-50 border-emerald-200">
+              <p className="text-sm">
+                নিচের নাম্বারে {METHODS[method].label} অ্যাপ থেকে
+              </p>
+              <p className="text-sm font-semibold">
+                &ldquo;Send Money&rdquo; করুন
+              </p>
 
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-xl font-bold tracking-wide">
-                ৳{totalToSend}
-              </span>
-              <button
-                type="button"
-                onClick={handleCopyAmount}
-                className="btn btn-xs btn-ghost"
-              >
-                {copiedAmount ? <FiCheck /> : <FiCopy />}
-              </button>
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xl font-bold tracking-wide">
+                  ৳{totalToSend}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyAmount}
+                  className="btn btn-xs btn-ghost"
+                >
+                  {copiedAmount ? <FiCheck /> : <FiCopy />}
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500">
+                (চাঁদা ৳{totalAmount} + ক্যাশআউট চার্জ ৳{charge})
+              </p>
+
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xl font-bold tracking-wide">
+                  {BKASH_NUMBER}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="btn btn-xs btn-ghost"
+                >
+                  {copied ? <FiCheck /> : <FiCopy />}
+                </button>
+              </div>
             </div>
+          ) : (
+            <div className="p-4 space-y-3 text-sm text-center border rounded-lg bg-sky-50 border-sky-200">
+              <p>নিচের ব্যাংক অ্যাকাউন্টে টাকা পাঠান</p>
 
-            <p className="text-xs text-gray-500">
-              (চাঁদা ৳{totalAmount} + ক্যাশআউট চার্জ ৳{charge})
-            </p>
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xl font-bold tracking-wide">
+                  ৳{totalToSend}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyAmount}
+                  className="btn btn-xs btn-ghost"
+                >
+                  {copiedAmount ? <FiCheck /> : <FiCopy />}
+                </button>
+              </div>
 
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-xl font-bold tracking-wide">
-                {BKASH_NUMBER}
-              </span>
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="btn btn-xs btn-ghost"
-              >
-                {copied ? <FiCheck /> : <FiCopy />}
-              </button>
+              <dl className="space-y-1 text-left">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-gray-500">অ্যাকাউন্টের নাম</dt>
+                  <dd className="font-semibold text-right">
+                    {BANK.accountName}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-gray-500">ব্যাংক</dt>
+                  <dd className="font-semibold text-right">{BANK.bankName}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-gray-500">শাখা</dt>
+                  <dd className="font-semibold text-right">{BANK.branch}</dd>
+                </div>
+                {BANK.routing && (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-gray-500">রাউটিং নম্বর</dt>
+                    <dd className="font-semibold text-right">{BANK.routing}</dd>
+                  </div>
+                )}
+              </dl>
+
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xl font-bold tracking-wide">
+                  {BANK.accountNumber}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyAccount}
+                  className="btn btn-xs btn-ghost"
+                >
+                  {copied ? <FiCheck /> : <FiCopy />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           <p className="text-xs text-center text-gray-500">
-            টাকা পাঠানোর পর আপনার {METHODS[method].label} অ্যাপে দেখানো
-            Transaction ID (TrxID) নিচে লিখুন। অ্যাডমিন যাচাই করার পর আপনার
-            চাঁদা আপডেট হবে।
+            {METHODS[method].type === "bank"
+              ? "টাকা পাঠানোর পর ব্যাংক থেকে পাওয়া Transaction ID / Reference নম্বর নিচে লিখুন।"
+              : `টাকা পাঠানোর পর আপনার ${METHODS[method].label} অ্যাপে দেখানো Transaction ID (TrxID) নিচে লিখুন।`}{" "}
+            অ্যাডমিন যাচাই করার পর আপনার চাঁদা আপডেট হবে।
           </p>
 
           <form onSubmit={handleSubmitClaim} className="space-y-3">
             <label className="form-control">
               <div className="label">
                 <span className="label-text">
-                  যে নাম্বার থেকে টাকা পাঠিয়েছেন
+                  {METHODS[method].type === "bank"
+                    ? "যে অ্যাকাউন্ট/নাম্বার থেকে টাকা পাঠিয়েছেন"
+                    : "যে নাম্বার থেকে টাকা পাঠিয়েছেন"}
                 </span>
               </div>
               <input
@@ -400,13 +474,21 @@ const DirectPaymentPage = () => {
                 required
                 value={senderNumber}
                 onChange={(e) => setSenderNumber(e.target.value)}
-                placeholder="যেমনঃ 017XXXXXXXX"
+                placeholder={
+                  METHODS[method].type === "bank"
+                    ? "অ্যাকাউন্ট নাম্বার বা ব্যাংকের নাম"
+                    : "যেমনঃ 017XXXXXXXX"
+                }
                 className="w-full input input-bordered"
               />
             </label>
             <label className="form-control">
               <div className="label">
-                <span className="label-text">Transaction ID (TrxID)</span>
+                <span className="label-text">
+                  {METHODS[method].type === "bank"
+                    ? "Transaction ID / Reference নম্বর"
+                    : "Transaction ID (TrxID)"}
+                </span>
               </div>
               <input
                 type="text"

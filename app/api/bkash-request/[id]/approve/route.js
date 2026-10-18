@@ -4,6 +4,8 @@ import { getCollections } from "@/lib/mongodb";
 import { sendSms } from "@/lib/sms";
 import { createPaySlip } from "@/lib/paySlip";
 
+const METHOD_LABELS = { bkash: "bKash", nagad: "Nagad", bank: "Bank" };
+
 async function sendConfirmationSms(number, message) {
   if (!number || number.length !== 11) return;
   try {
@@ -29,7 +31,8 @@ export async function PATCH(request, { params }) {
     );
   }
 
-  const isNagad = claim.method === "nagad";
+  const method = METHOD_LABELS[claim.method] ? claim.method : "bkash";
+  const methodLabel = METHOD_LABELS[method];
 
   const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
   const year = new Date().getFullYear();
@@ -57,7 +60,7 @@ export async function PATCH(request, { params }) {
       type: "Monthly",
       time,
       year,
-      method: isNagad ? "Nagad" : "bKash",
+      method: methodLabel,
       trxID: claim.trxID,
       senderNumber: claim.senderNumber,
       combinedTotal: claim.totalAmount,
@@ -87,7 +90,7 @@ export async function PATCH(request, { params }) {
       type: "Tarabi",
       time,
       year,
-      method: isNagad ? "Nagad" : "bKash",
+      method: methodLabel,
       trxID: claim.trxID,
       senderNumber: claim.senderNumber,
       combinedTotal: claim.totalAmount,
@@ -114,7 +117,7 @@ export async function PATCH(request, { params }) {
       type: "Due",
       time,
       year,
-      method: isNagad ? "Nagad" : "bKash",
+      method: methodLabel,
       trxID: claim.trxID,
       senderNumber: claim.senderNumber,
       combinedTotal: claim.totalAmount,
@@ -140,7 +143,7 @@ export async function PATCH(request, { params }) {
     name: claim.name,
     home: claim.home,
     items: slipItems,
-    method: isNagad ? "nagad" : "bkash",
+    method, // "bkash" | "nagad" | "bank"
     trxID: claim.trxID,
   });
 
