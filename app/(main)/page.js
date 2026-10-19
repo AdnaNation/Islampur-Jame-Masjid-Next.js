@@ -1,14 +1,22 @@
 import Link from "next/link";
-import Image from "next/image";
 import { MdHistory, MdLocationOn, MdPayments } from "react-icons/md";
 import PrayerTimes from "@/components/PrayerTimes";
 import QuranSection from "@/components/QuranSection";
+import HeroSlider from "@/components/HeroSlider";
 export const metadata = {
   title: "ইসলামপুর জামে মসজিদ",
   robots: { index: false, follow: false },
 };
 
 export default function Home() {
+  const HERO_IMAGES = [
+    { src: "/mosque.jpg", alt: "ইসলামপুর জামে মসজিদের প্রবেশদ্বার" },
+    {
+      src: "/mosque-2.jpg",
+      alt: "মসজিদের ভেতরের দৃশ্য",
+    },
+    { src: "/mosque-3.jpg", alt: "মসজিদের সামনের অংশ" },
+  ];
   return (
     <div className="bg-[#f7f5ef]">
       {/* Hero */}
@@ -49,14 +57,7 @@ export default function Home() {
           </div>
 
           <div className="p-2 shadow-2xl rounded-3xl bg-white/10">
-            <Image
-              src="/mosque.jpg"
-              alt="ইসলামপুর জামে মসজিদের প্রবেশদ্বার"
-              width={1080}
-              height={810}
-              priority
-              className="w-full h-auto rounded-2xl"
-            />
+            <HeroSlider images={HERO_IMAGES} />
           </div>
         </div>
       </section>
