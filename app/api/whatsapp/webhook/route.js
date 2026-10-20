@@ -345,32 +345,23 @@ export async function POST(req) {
 
     const textRaw = message.type === "text" ? (message.text?.body ?? "") : "";
     const { sessionCollection, messageCollection } = await getCollections();
+
     // 1. SAVE INCOMING WHATSAPP TO DB
     try {
+      const now = new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Dhaka",
+      });
       await messageCollection.updateOne(
-        { waId: from }, // find by waId
+        { waId: from },
         {
-          $set: {
-            platform: "whatsapp",
-            name: value?.contacts?.[0]?.profile?.name || "",
-            waId: from,
-            updatedAt: new Date(),
-          },
+          $set: { waId: from, name: value?.contacts?.[0]?.profile?.name || "" },
           $push: {
             messages: {
               messageId: message.id,
-              type: message.type,
               text: textRaw,
-              raw: message,
-              direction: "incoming",
-              createdAt: new Date(),
-              createdAtDhaka: new Date().toLocaleString("en-US", {
-                timeZone: "Asia/Dhaka",
-              }),
+              type: message.type,
+              updatedAt: now,
             },
-          },
-          $setOnInsert: {
-            createdAt: new Date(),
           },
         },
         { upsert: true },
