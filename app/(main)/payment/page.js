@@ -1,10 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FiLoader } from "react-icons/fi";
 import {
   MdCalendarMonth,
+  MdFilterAltOff,
   MdHistory,
   MdMoneyOff,
   MdNightsStay,
@@ -64,6 +65,18 @@ function formatTime(value) {
   return `${day}/${month}/${date.getFullYear()} ${hours % 12 || 12}:${minutes} ${ampm}`;
 }
 
+const PAGE_SIZE = 50;
+
+// Payment "time" is stored as an en-US string already in Dhaka time
+// (e.g. "10/19/2026, 3:45:12 PM"), so it is parsed and compared on the client.
+const toDayKey = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`; // comparable with <input type="date">
+};
+
 const PaymentHistory = () => {
   const [isAdmin] = useAdmin();
   const [homeName] = useHomeName();
@@ -71,6 +84,9 @@ const PaymentHistory = () => {
   const [name, setName] = useState(" ");
   const [revertingId, setRevertingId] = useState(null);
   const [tab, setTab] = useState("active"); // "active" | "reverted"
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [limit, setLimit] = useState(PAGE_SIZE);
   const axiosPublic = useAxiosPublic();
 
   // Non-admins should never end up stuck on the reverted tab.
@@ -89,9 +105,13 @@ const PaymentHistory = () => {
   });
 
   const currentYear = new Date().getFullYear();
-  const totalFeeCurrentYear = data?.data
-    .filter((item) => Number(item.year) === currentYear)
-    .reduce((sum, item) => sum + (Number(item.fee) || 0), 0);
+  const totalFeeCurrentYear = useMemo(
+    () =>
+      (data?.data || [])
+        .filter((item) => Number(item.year) === currentYear)
+        .reduce((sum, item) => sum + (Number(item.fee) || 0), 0),
+    [data, currentYear],
+  );
 
   const { data: userName = {}, refetch: reload } = useQuery({
     queryKey: ["usersName", home],
@@ -106,12 +126,14 @@ const PaymentHistory = () => {
   }, [refetch]);
 
   const handleHome = async (e) => {
+    setLimit(PAGE_SIZE);
     setName(" ");
     setHome(e.target.value);
     await reload();
   };
   const handleName = (e) => {
     const name = e.target.value;
+    setLimit(PAGE_SIZE);
     setName(name.split(" (")[0]);
     reload();
   };
@@ -165,7 +187,33 @@ const PaymentHistory = () => {
     }
   };
 
-  const list = data?.data?.slice().reverse() || [];
+  // newest first + optional date range (computed only when inputs change)
+  const filtered = useMemo(() => {
+    const all = (data?.data || []).slice().reverse();
+    if (!fromDate && !toDate) return all;
+    return all.filter((item) => {
+      const key = toDayKey(item.time);
+      if (!key) return false;
+      if (fromDate && key < fromDate) return false;
+      if (toDate && key > toDate) return false;
+      return true;
+    });
+  }, [data, fromDate, toDate]);
+
+  // only the first `limit` cards are rendered
+  const list = useMemo(() => filtered.slice(0, limit), [filtered, limit]);
+
+  const rangeTotal = useMemo(
+    () => filtered.reduce((sum, item) => sum + (Number(item.fee) || 0), 0),
+    [filtered],
+  );
+
+  const hasRange = Boolean(fromDate || toDate);
+  const clearRange = () => {
+    setFromDate("");
+    setToDate("");
+    setLimit(PAGE_SIZE);
+  };
 
   return (
     <div className="min-h-screen bg-[#f7f5ef]">
@@ -233,23 +281,74 @@ const PaymentHistory = () => {
             </select>
           </div>
 
+          {/* Date range */}
+          <div className="grid items-end gap-3 mt-3 sm:grid-cols-[1fr_1fr_auto]">
+            <label className="block">
+              <span className="text-xs text-gray-500">শুরুর তারিখ</span>
+              <input
+                type="date"
+                value={fromDate}
+                max={toDate || undefined}
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setLimit(PAGE_SIZE);
+                }}
+                className="w-full input input-bordered"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-gray-500">শেষ তারিখ</span>
+              <input
+                type="date"
+                value={toDate}
+                min={fromDate || undefined}
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setLimit(PAGE_SIZE);
+                }}
+                className="w-full input input-bordered"
+              />
+            </label>
+            {hasRange && (
+              <button
+                type="button"
+                onClick={clearRange}
+                className="flex items-center justify-center gap-1 px-4 text-sm font-medium text-gray-600 rounded-lg h-12 bg-stone-100 hover:bg-stone-200"
+              >
+                <MdFilterAltOff /> মুছুন
+              </button>
+            )}
+          </div>
+
           {data?.data && (
             <div className="grid grid-cols-2 gap-3 mt-3">
               <div className="px-4 py-2 rounded-xl bg-stone-50">
                 <p className="text-xs text-gray-500">মোট পেমেন্ট</p>
                 <p className="text-lg font-bold text-gray-900">
-                  {fmt(list.length)} টি
+                  {fmt(filtered.length)} টি
                 </p>
               </div>
-              {isAdmin && tab === "active" && (
+              {isAdmin && tab === "active" && hasRange ? (
                 <div className="px-4 py-2 rounded-xl bg-emerald-50">
                   <p className="text-xs text-emerald-700">
-                    {currentYear} সালের মোট
+                    নির্বাচিত সময়ের মোট
                   </p>
                   <p className="text-lg font-bold text-[#0f3d2e]">
-                    ৳{fmt(Math.floor(totalFeeCurrentYear))}
+                    ৳{fmt(Math.floor(rangeTotal))}
                   </p>
                 </div>
+              ) : (
+                isAdmin &&
+                tab === "active" && (
+                  <div className="px-4 py-2 rounded-xl bg-emerald-50">
+                    <p className="text-xs text-emerald-700">
+                      {currentYear} সালের মোট
+                    </p>
+                    <p className="text-lg font-bold text-[#0f3d2e]">
+                      ৳{fmt(Math.floor(totalFeeCurrentYear))}
+                    </p>
+                  </div>
+                )
               )}
             </div>
           )}
@@ -259,6 +358,15 @@ const PaymentHistory = () => {
         {isPending && (
           <div className="flex justify-center mt-16 text-3xl text-gray-400 animate-spin">
             <FiLoader />
+          </div>
+        )}
+
+        {data?.data && filtered.length === 0 && hasRange && (
+          <div className="max-w-sm p-6 mx-auto mt-10 text-center bg-white border border-amber-100 shadow-sm rounded-2xl">
+            <MdSearchOff className="mx-auto text-4xl text-amber-400" />
+            <p className="mt-2 text-sm font-medium text-amber-700">
+              নির্বাচিত তারিখের মধ্যে কোনো পেমেন্ট নেই!
+            </p>
           </div>
         )}
 
@@ -365,6 +473,17 @@ const PaymentHistory = () => {
             );
           })}
         </div>
+
+        {filtered.length > limit && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setLimit((l) => l + PAGE_SIZE)}
+              className="rounded-full border border-[#0f3d2e] px-6 py-2 text-sm font-semibold text-[#0f3d2e] transition hover:bg-[#0f3d2e] hover:text-white"
+            >
+              আরো দেখুন ({fmt(filtered.length - limit)})
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
