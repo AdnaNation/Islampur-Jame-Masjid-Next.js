@@ -341,20 +341,34 @@ export async function POST(req) {
     const { sessionCollection, messageCollection } = await getCollections();
     // 1. SAVE INCOMING WHATSAPP TO DB
     try {
-      await messageCollection.insertOne({
-        platform: "whatsapp",
-        waId: from,
-        name: value?.contacts?.[0]?.profile?.name || "",
-        messageId: message.id,
-        type: message.type,
-        text: textRaw,
-        raw: message,
-        direction: "incoming",
-        createdAt: new Date(),
-        createdAtDhaka: new Date().toLocaleString("en-US", {
-          timeZone: "Asia/Dhaka",
-        }),
-      });
+      await messageCollection.updateOne(
+        { waId: from }, // find by waId
+        {
+          $set: {
+            platform: "whatsapp",
+            name: value?.contacts?.[0]?.profile?.name || "",
+            waId: from,
+            updatedAt: new Date(),
+          },
+          $push: {
+            messages: {
+              messageId: message.id,
+              type: message.type,
+              text: textRaw,
+              raw: message,
+              direction: "incoming",
+              createdAt: new Date(),
+              createdAtDhaka: new Date().toLocaleString("en-US", {
+                timeZone: "Asia/Dhaka",
+              }),
+            },
+          },
+          $setOnInsert: {
+            createdAt: new Date(),
+          },
+        },
+        { upsert: true },
+      );
     } catch (e) {
       console.error("WA save failed", e);
     }
