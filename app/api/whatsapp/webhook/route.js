@@ -346,11 +346,13 @@ export async function POST(req) {
     const textRaw = message.type === "text" ? (message.text?.body ?? "") : "";
     const { sessionCollection, messageCollection } = await getCollections();
 
+    const session = await sessionCollection.findOne({ _id: from });
+    if (session?.lastId === message.id)
+      return Response.json({ status: "duplicate" }, { status: 200 });
+
     // 1. SAVE INCOMING WHATSAPP TO DB
     try {
-      const now = new Date().toLocaleString("en-US", {
-        timeZone: "Asia/Dhaka",
-      });
+      const now = new Date();
       await messageCollection.updateOne(
         { waId: from },
         {
@@ -369,10 +371,6 @@ export async function POST(req) {
     } catch (e) {
       console.error("WA save failed", e);
     }
-
-    const session = await sessionCollection.findOne({ _id: from });
-    if (session?.lastId === message.id)
-      return Response.json({ status: "duplicate" }, { status: 200 });
 
     const isSessionExpired =
       session?.updatedAt &&
