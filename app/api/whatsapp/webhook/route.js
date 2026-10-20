@@ -338,7 +338,27 @@ export async function POST(req) {
     if (!from) return Response.json({ status: "no_sender" }, { status: 200 });
 
     const textRaw = message.type === "text" ? (message.text?.body ?? "") : "";
-    const { sessionCollection } = await getCollections();
+    const { sessionCollection, messageCollection } = await getCollections();
+    // 1. SAVE INCOMING WHATSAPP TO DB
+    try {
+      await messageCollection.insertOne({
+        platform: "whatsapp",
+        waId: from,
+        name: value?.contacts?.[0]?.profile?.name || "",
+        messageId: message.id,
+        type: message.type,
+        text: textRaw,
+        raw: message,
+        direction: "incoming",
+        createdAt: new Date(),
+        createdAtDhaka: new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Dhaka",
+        }),
+      });
+    } catch (e) {
+      console.error("WA save failed", e);
+    }
+
     const session = await sessionCollection.findOne({ _id: from });
     if (session?.lastId === message.id)
       return Response.json({ status: "duplicate" }, { status: 200 });
