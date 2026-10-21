@@ -23,6 +23,7 @@ function DashboardLayout({ children }) {
           <div className="hidden min-h-screen border-r-2 shadow-sm md:block bg-zinc-100 md:min-w-56">
             <div className="flex flex-col gap-3">
               <Link href="/dashboard/home">এডমিন হোম</Link>
+              <Link href="/dashboard/accounts">আয়-ব্যয়ের হিসাব</Link>
               <Link href="/dashboard/payment-requests">পেমেন্ট রিকোয়েস্ট</Link>
               <Link href="/dashboard/messages">ম্যাসেজ প্যানেল</Link>
               <Link href="/dashboard/inbox">হোয়াটসঅ্যাপ ইনবক্স</Link>
@@ -54,6 +55,9 @@ function DashboardLayout({ children }) {
             <div className="flex flex-col gap-3">
               <Link onClick={handleToggle} href="/dashboard/home">
                 এডমিন হোম
+              </Link>
+              <Link onClick={handleToggle} href="/dashboard/accounts">
+                আয়-ব্যয়ের হিসাব
               </Link>
               <Link onClick={handleToggle} href="/dashboard/payment-requests">
                 পেমেন্ট রিকোয়েস্ট
