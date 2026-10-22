@@ -61,11 +61,16 @@ const PaymentHistory = ({ userId }) => {
 
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold">পেমেন্ট হিস্ট্রি (গত ২ বছর)</h2>
+      <h2 className="text-sm font-semibold text-[#0f3d2e]">
+        পেমেন্ট হিস্ট্রি{" "}
+        <span className="font-normal text-slate-500">(গত ২ বছর)</span>
+      </h2>
 
       {loading && <HistorySkeleton />}
       {!loading && error && (
-        <p className="text-sm text-red-600">পেমেন্ট হিস্ট্রি লোড করা যায়নি।</p>
+        <p className="p-3 text-sm text-center border rounded-lg border-slate-200 bg-slate-50 text-slate-500">
+          পেমেন্ট হিস্ট্রি লোড করা যায়নি।
+        </p>
       )}
 
       {!loading && !error && groups.length === 0 && (
@@ -77,12 +82,15 @@ const PaymentHistory = ({ userId }) => {
       {!loading &&
         !error &&
         groups.map((g) => (
-          <div key={g.year} className="overflow-hidden border rounded-lg">
-            <div className="flex items-center justify-between px-3 py-2 text-sm font-semibold bg-gray-100">
+          <div
+            key={g.year}
+            className="overflow-hidden border rounded-lg border-slate-200"
+          >
+            <div className="flex items-center justify-between px-3 py-2 text-sm font-semibold bg-[#eef3ee] text-[#0f3d2e]">
               <span>{g.year}</span>
               <span>মোট: ৳{g.total}</span>
             </div>
-            <ul className="divide-y">
+            <ul className="divide-y divide-slate-100">
               {g.items.map((p) => (
                 <li
                   key={p._id}
@@ -95,12 +103,12 @@ const PaymentHistory = ({ userId }) => {
                         ? ` (${p.monthName})`
                         : ""}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500">
                       {formatDate(p.time)}
                       {p.method ? ` • ${p.method}` : ""}
                     </p>
                   </div>
-                  <span className="font-semibold whitespace-nowrap">
+                  <span className="font-bold tabular-nums whitespace-nowrap text-[#8a6420]">
                     ৳{p.fee}
                   </span>
                 </li>

@@ -2,13 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { FiCopy, FiCheck } from "react-icons/fi";
 import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
-import monthTranslation from "@/lib/monthTranslation";
-import { formatMonthRange } from "@/lib/monthRange";
 import PaymentHistory from "@/components/PaymentHistory";
-import { BtnLoading, SectionLoader } from "@/components/Loader";
+import { SectionLoader } from "@/components/Loader";
+import {
+  PayShell,
+  Card,
+  MemberCard,
+  SmsNotice,
+  DuesSelector,
+  OrderSummary,
+  MethodPicker,
+  SendMoneyCard,
+  ClaimForm,
+  HelpLink,
+  StatusCard,
+  btnOutline,
+} from "@/components/pay/PayUI";
 
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
 const WHATSAPP_NUMBER = "8801776236285";
@@ -48,8 +59,6 @@ const DirectPaymentPage = () => {
   const [trxID, setTrxID] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Auto-lookup by the phone number straight from the URL - no home/name
-  // dropdowns needed when someone arrives via a direct link.
   useEffect(() => {
     const lookup = async () => {
       axiosPublic.post("/pay-link-visit", { number }).catch(() => {});
@@ -184,380 +193,130 @@ const DirectPaymentPage = () => {
     return `${num.slice(0, 3)}***${num.slice(-3)}`;
   };
 
-  return (
-    <div className="max-w-xl px-4 mx-auto my-10">
-      <h1 className="mb-1 text-2xl font-bold text-center">
-        Online চাঁদা পরিশোধ
-      </h1>
-      <p className="mb-8 text-sm text-center text-gray-500">
-        ইসলামপুর জামে মসজিদ
-      </p>
+  const stepNo = { select: 1, confirm: 2, done: 4 }[step] || 0;
+  const isBank = METHODS[method].type === "bank";
 
+  return (
+    <PayShell stepNo={stepNo}>
       {/* Looking up the member from the URL */}
-      {step === "loading" && <SectionLoader label="তথ্য লোড হচ্ছে..." />}
+      {step === "loading" && (
+        <Card>
+          <SectionLoader label="তথ্য লোড হচ্ছে..." />
+        </Card>
+      )}
 
       {/* Number in the URL didn't match any member */}
       {step === "notFound" && (
-        <div className="py-10 space-y-4 text-center">
-          <p className="text-4xl">❌</p>
-          <p className="font-semibold">এই নাম্বারে কোনো সদস্য পাওয়া যায়নি।</p>
-          <button
-            onClick={() => router.push("/pay")}
-            className="btn btn-outline btn-info"
-          >
+        <>
+          <StatusCard
+            tone="error"
+            title="এই নাম্বারে কোনো সদস্য পাওয়া যায়নি।"
+            text="লিংকটি সঠিক আছে কিনা দেখুন, অথবা বাড়ি ও নাম বাছাই করে এগিয়ে যান।"
+          />
+          <button onClick={() => router.push("/pay")} className={btnOutline}>
             বাড়ি/নাম থেকে বাছাই করুন
           </button>
-        </div>
+        </>
       )}
 
       {/* No dues at all */}
       {step === "noDue" && user && (
-        <div className="py-10 space-y-4 text-center">
-          <p className="text-4xl">🎉</p>
-          <p className="font-semibold">{user.NameBn} এর কোনো বকেয়া নেই।</p>
-          <div className="text-left">
+        <>
+          <StatusCard
+            title={`${user.NameBn} এর কোনো বকেয়া নেই।`}
+            text="আলহামদুলিল্লাহ! আপনার সব চাঁদা পরিশোধিত।"
+          />
+          <Card>
             <PaymentHistory userId={user._id} />
-          </div>
-        </div>
+          </Card>
+        </>
       )}
 
-      {/* Step 2: choose what to pay - all types together */}
+      {/* Step 1: choose what to pay */}
       {step === "select" && user && (
-        <div className="space-y-4">
-          <div className="p-3 text-sm border rounded-lg bg-gray-50">
-            <p className="font-semibold">{user.NameBn}</p>
-            <p className="text-gray-500">{user.HomeName}</p>
-          </div>
-
-          {!user.Number ? (
-            <p className="text-[0.5rem] text-red-600 font-bold">
-              আমাদের সার্ভারে আপনার নাম্বার নেই। মাসিক আপডেট পেতে দয়া করে আপনার
-              নাম্বারটি আমাদের হোয়াটসঅ্যাপে প্রদান করবেন
-            </p>
-          ) : (
-            <p className="text-[0.7rem] text-red-600 font-bold">
-              পেমেন্ট রিসিভ হলে আপনার {maskNumber(user.Number)} নাম্বারে SMS
-              পাঠানো হবে।
-            </p>
-          )}
-
-          {unpaidMonths.length > 0 && (
-            <div>
-              <p className="mb-1 text-sm font-semibold">
-                মাসিক চাঁদা (৳{user.FeeRate}/মাস)
-              </p>
-              <button
-                type="button"
-                onClick={toggleAllMonths}
-                className="mb-2 btn btn-xs btn-outline btn-info"
-              >
-                {allMonthsSelected ? "সব বাতিল করুন" : "সব মাস বাছাই করুন"}
-              </button>
-              <div className="grid grid-cols-3 gap-2">
-                {unpaidMonths.map((m) => (
-                  <label
-                    key={m.monthName}
-                    className="flex items-center gap-1 p-2 text-sm border rounded cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedMonths.includes(m.monthName)}
-                      onChange={() => toggleMonth(m.monthName)}
-                    />
-                    {monthTranslation[m.monthName] || m.monthName}
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {user.Tarabi?.status === "unpaid" && (
-            <label className="flex items-center gap-2 p-2 text-sm border rounded cursor-pointer">
-              <input
-                type="checkbox"
-                checked={payTarabi}
-                onChange={(e) => setPayTarabi(e.target.checked)}
-              />
-              তারাবীর চাঁদা (৳{user.Tarabi?.fee})
-            </label>
-          )}
-
-          {Number(user.Due) > 0 && (
-            <div className="p-2 space-y-2 border rounded">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={payDueChecked}
-                  onChange={(e) => {
-                    setPayDueChecked(e.target.checked);
-                  }}
-                />
-                বকেয়া পরিশোধ (মোট বকেয়া: ৳{user.Due})
-              </label>
-            </div>
-          )}
-
-          {totalAmount > 0 && (
-            <div className="text-lg font-semibold text-center">
-              মোট পরিশোধ করবেন: ৳{totalAmount}
-            </div>
-          )}
-
-          <button
-            disabled={!canContinueToConfirm}
-            onClick={() => setStep("confirm")}
-            className="w-full btn btn-info disabled:opacity-50"
-          >
-            পরবর্তী ধাপ
-          </button>
-          <div className="pt-4 border-t">
+        <>
+          <MemberCard user={user} />
+          <SmsNotice
+            hasNumber={!!user.Number}
+            masked={maskNumber(user.Number)}
+          />
+          <DuesSelector
+            user={user}
+            unpaidMonths={unpaidMonths}
+            selectedMonths={selectedMonths}
+            onToggleMonth={toggleMonth}
+            allMonthsSelected={allMonthsSelected}
+            onToggleAll={toggleAllMonths}
+            payTarabi={payTarabi}
+            onTarabi={setPayTarabi}
+            payDueChecked={payDueChecked}
+            onDue={setPayDueChecked}
+            totalAmount={totalAmount}
+            onNext={() => setStep("confirm")}
+          />
+          <Card>
             <PaymentHistory userId={user._id} />
-          </div>
-        </div>
+          </Card>
+        </>
       )}
 
-      {/* Step 3: send money + submit trxID */}
+      {/* Step 2: send money + submit trxID */}
       {step === "confirm" && (
-        <div className="space-y-5">
-          <div className="p-3 space-y-1 text-sm border rounded-lg bg-gray-50">
-            {selectedMonths.length > 0 && (
-              <p>
-                মাসিক চাঁদা ({formatMonthRange(selectedMonths)}) - ৳
-                {monthlyAmount}
-              </p>
-            )}
-            {payTarabi && <p>তারাবীর চাঁদা - ৳{tarabiAmount}</p>}
-            {payDueChecked && dueAmountValue > 0 && (
-              <p>বকেয়া - ৳{dueAmountValue}</p>
-            )}
-            <p className="pt-1 font-semibold border-t">
-              মোট - ৳{totalAmount}
-              {METHODS[method].rate > 0 &&
-                ` + ক্যাশআউট চার্জ (${(METHODS[method].rate * 100).toLocaleString("bn-BD")}%)`}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries(METHODS).map(([key, m]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setMethod(key)}
-                className="btn btn-sm"
-                style={
-                  method === key
-                    ? {
-                        backgroundColor: m.color,
-                        borderColor: m.color,
-                        color: "#fff",
-                      }
-                    : {}
-                }
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-
-          {METHODS[method].type === "mobile" ? (
-            <div className="p-4 space-y-2 text-center border rounded-lg bg-emerald-50 border-emerald-200">
-              <p className="text-sm">
-                নিচের নাম্বারে {METHODS[method].label} অ্যাপ থেকে
-              </p>
-              <p className="text-sm font-semibold">
-                &ldquo;Send Money&rdquo; করুন
-              </p>
-
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-xl font-bold tracking-wide">
-                  ৳{totalToSend}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopyAmount}
-                  className="btn btn-xs btn-ghost"
-                >
-                  {copiedAmount ? <FiCheck /> : <FiCopy />}
-                </button>
-              </div>
-
-              <p className="text-xs text-gray-500">
-                (চাঁদা ৳{totalAmount} + ক্যাশআউট চার্জ ৳{charge})
-              </p>
-
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-xl font-bold tracking-wide">
-                  {BKASH_NUMBER}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className="btn btn-xs btn-ghost"
-                >
-                  {copied ? <FiCheck /> : <FiCopy />}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="p-4 space-y-3 text-sm text-center border rounded-lg bg-sky-50 border-sky-200">
-              <p>নিচের ব্যাংক অ্যাকাউন্টে টাকা পাঠান</p>
-
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-xl font-bold tracking-wide">
-                  ৳{totalToSend}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopyAmount}
-                  className="btn btn-xs btn-ghost"
-                >
-                  {copiedAmount ? <FiCheck /> : <FiCopy />}
-                </button>
-              </div>
-
-              <dl className="space-y-1 text-left">
-                <div className="flex justify-between gap-3">
-                  <dt className="text-gray-500">অ্যাকাউন্টের নাম</dt>
-                  <dd className="font-semibold text-right">
-                    {BANK.accountName}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-gray-500">ব্যাংক</dt>
-                  <dd className="font-semibold text-right">{BANK.bankName}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-gray-500">শাখা</dt>
-                  <dd className="font-semibold text-right">{BANK.branch}</dd>
-                </div>
-                {BANK.routing && (
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-gray-500">রাউটিং নম্বর</dt>
-                    <dd className="font-semibold text-right">{BANK.routing}</dd>
-                  </div>
-                )}
-              </dl>
-
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-xl font-bold tracking-wide">
-                  {BANK.accountNumber}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopyAccount}
-                  className="btn btn-xs btn-ghost"
-                >
-                  {copied ? <FiCheck /> : <FiCopy />}
-                </button>
-              </div>
-            </div>
-          )}
-          <p className="text-xs text-center text-gray-500">
-            {METHODS[method].type === "bank"
-              ? "টাকা পাঠানোর পর ব্যাংক থেকে পাওয়া Transaction ID / Reference নম্বর নিচে লিখুন।"
-              : `টাকা পাঠানোর পর আপনার ${METHODS[method].label} অ্যাপে দেখানো Transaction ID (TrxID) নিচে লিখুন।`}{" "}
-            অ্যাডমিন যাচাই করার পর আপনার চাঁদা আপডেট হবে।
-          </p>
-
-          <form onSubmit={handleSubmitClaim} className="space-y-3">
-            <label className="form-control">
-              <div className="label">
-                <span className="label-text">
-                  {METHODS[method].type === "bank"
-                    ? "যে অ্যাকাউন্ট/নাম্বার থেকে টাকা পাঠিয়েছেন"
-                    : "যে নাম্বার থেকে টাকা পাঠিয়েছেন"}
-                </span>
-              </div>
-              <input
-                type="text"
-                required
-                value={senderNumber}
-                onChange={(e) => setSenderNumber(e.target.value)}
-                placeholder={
-                  METHODS[method].type === "bank"
-                    ? "অ্যাকাউন্ট নাম্বার বা ব্যাংকের নাম"
-                    : "যেমনঃ 017XXXXXXXX"
-                }
-                className="w-full input input-bordered"
-              />
-            </label>
-            <label className="form-control">
-              <div className="label">
-                <span className="label-text">
-                  {METHODS[method].type === "bank"
-                    ? "Transaction ID / Reference নম্বর"
-                    : "Transaction ID (TrxID)"}
-                </span>
-              </div>
-              <input
-                type="text"
-                required
-                value={trxID}
-                onChange={(e) => setTrxID(e.target.value)}
-                placeholder="যেমনঃ 9G7H3K2L1M"
-                className="w-full uppercase input input-bordered"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full btn btn-info"
-            >
-              {submitting ? (
-                <BtnLoading text="পাঠানো হচ্ছে..." />
-              ) : (
-                "যাচাইয়ের জন্য জমা দিন"
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep("select")}
-              className="w-full btn btn-ghost btn-sm"
-            >
-              পিছনে যান
-            </button>
-          </form>
-
-          {WHATSAPP_NUMBER && (
-            <p className="text-xs text-center text-gray-500">
-              পেমেন্ট নিয়ে কোনো সমস্যা হলে{" "}
-              <a
-                href={getWhatsappLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-green-600 underline"
-              >
-                WhatsApp এ যোগাযোগ করুন
-              </a>
-            </p>
-          )}
-        </div>
+        <>
+          <OrderSummary
+            months={selectedMonths}
+            monthlyAmount={monthlyAmount}
+            payTarabi={payTarabi}
+            tarabiAmount={tarabiAmount}
+            payDue={payDueChecked}
+            dueAmount={dueAmountValue}
+            totalAmount={totalAmount}
+            rate={METHODS[method].rate}
+          />
+          <MethodPicker
+            methods={METHODS}
+            method={method}
+            onChange={setMethod}
+          />
+          <SendMoneyCard
+            method={method}
+            methodInfo={METHODS[method]}
+            totalAmount={totalAmount}
+            charge={charge}
+            totalToSend={totalToSend}
+            copiedAmount={copiedAmount}
+            onCopyAmount={handleCopyAmount}
+            copied={copied}
+            onCopyTarget={isBank ? handleCopyAccount : handleCopy}
+            mobileNumber={BKASH_NUMBER}
+            bank={BANK}
+          />
+          <ClaimForm
+            isBank={isBank}
+            methodLabel={METHODS[method].label}
+            senderNumber={senderNumber}
+            onSender={setSenderNumber}
+            trxID={trxID}
+            onTrx={setTrxID}
+            onSubmit={handleSubmitClaim}
+            submitting={submitting}
+            onBack={() => setStep("select")}
+          />
+          {WHATSAPP_NUMBER && <HelpLink href={getWhatsappLink()} />}
+        </>
       )}
 
-      {/* Step 4: done */}
+      {/* Step 3: done */}
       {step === "done" && (
-        <div className="py-6 space-y-4 text-center">
-          <p className="text-3xl">✅</p>
-          <p className="font-semibold">ধন্যবাদ!</p>
-          <p className="text-sm text-gray-500">
-            আপনার তথ্য জমা হয়েছে। অ্যাডমিন যাচাই করার পর আপনার চাঁদা আপডেট হবে।
-          </p>
-          {WHATSAPP_NUMBER && (
-            <p className="text-xs text-center text-gray-500">
-              পেমেন্ট নিয়ে কোনো সমস্যা হলে{" "}
-              <a
-                href={getWhatsappLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-green-600 underline"
-              >
-                WhatsApp এ যোগাযোগ করুন
-              </a>
-            </p>
-          )}
-        </div>
+        <>
+          <StatusCard
+            title="ধন্যবাদ!"
+            text="আপনার তথ্য জমা হয়েছে। অ্যাডমিন যাচাই করার পর আপনার চাঁদা আপডেট হবে।"
+          />
+          {WHATSAPP_NUMBER && <HelpLink href={getWhatsappLink()} />}
+        </>
       )}
-    </div>
+    </PayShell>
   );
 };
 

@@ -60,7 +60,13 @@ export default function Letterhead({ refNo = "", dateYmd = "" }) {
         <div className="shrink-0">
           {logoSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoSrc} alt="" width={92} className="object-contain" />
+            <img
+              src={logoSrc}
+              alt=""
+              width={92}
+              height={92}
+              className="object-contain"
+            />
           ) : (
             <MosqueMark color={color} />
           )}
