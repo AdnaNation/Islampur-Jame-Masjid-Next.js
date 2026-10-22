@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
+import { MdSearchOff } from "react-icons/md";
+import { SectionLoader } from "@/components/Loader";
 
 const METHOD_NAMES = { bkash: "bKash", nagad: "Nagad", bank: "ব্যাংক" };
 
@@ -122,10 +124,20 @@ const PaymentRequestsPage = () => {
         ))}
       </div>
 
-      {isPending && <p className="text-gray-400">লোড হচ্ছে...</p>}
+      {isPending && (
+        <SectionLoader
+          label="রিকোয়েস্ট তালিকা লোড হচ্ছে..."
+          className="mt-10"
+        />
+      )}
 
       {!isPending && claims.length === 0 && (
-        <p className="text-gray-400">কোনো অনুরোধ নেই।</p>
+        <div className="max-w-sm p-6 mx-auto mt-10 text-center bg-white border shadow-sm border-rose-100 rounded-2xl">
+          <MdSearchOff className="mx-auto text-4xl text-rose-400" />
+          <p className="mt-2 text-sm font-medium text-rose-700">
+            কোনো অনুরোধ নেই।
+          </p>
+        </div>
       )}
 
       <div className="space-y-3">
