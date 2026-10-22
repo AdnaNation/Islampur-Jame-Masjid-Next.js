@@ -17,6 +17,7 @@ import {
   rangeLabel,
   titleRange,
 } from "@/lib/accountReport";
+import Letterhead from "@/components/Letterhead";
 
 const field =
   "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#0f3d2e] focus:outline-none";
@@ -77,6 +78,8 @@ function ReportView() {
   const { data: settings, isPending: settingsPending } = useAccountSettings();
   const [fromRaw, setFromRaw] = useState(params.get("from") || null);
   const [to, setTo] = useState(params.get("to") || today);
+  const [refNo, setRefNo] = useState("");
+  const [docDate, setDocDate] = useState(today);
   const from = fromRaw ?? settings?.startDate ?? `${today.slice(0, 4)}-01-01`;
 
   const ready = YMD.test(from) && YMD.test(to) && from <= to;
@@ -130,6 +133,27 @@ function ReportView() {
               min={from || undefined}
               onChange={(e) => setTo(e.target.value)}
               className={field}
+            />
+          </label>
+          <label className="block min-w-0">
+            <span className="block text-xs text-slate-500">চিঠির তারিখ</span>
+            <input
+              type="date"
+              value={docDate}
+              onChange={(e) => setDocDate(e.target.value)}
+              className={field}
+            />
+          </label>
+          <label className="block min-w-0">
+            <span className="block text-xs text-slate-500">
+              সূত্র নং (ঐচ্ছিক)
+            </span>
+            <input
+              value={refNo}
+              maxLength={40}
+              onChange={(e) => setRefNo(e.target.value)}
+              placeholder="খালি রাখা যাবে"
+              className={`${field} w-40`}
             />
           </label>
         </div>
@@ -194,9 +218,11 @@ function ReportView() {
             data-name={`${from}_to_${to}`}
             className="mx-auto w-[794px] min-h-[1123px] bg-white px-14 py-10 text-black print:min-h-0 print:w-full print:p-0"
           >
-            <h1 className="mb-5 text-center text-[15px] font-bold">
-              ইসলামপুর জামে মসজিদের হিসাব ({titleRange(from, to)})
-            </h1>
+            <Letterhead refNo={refNo} dateYmd={docDate} />
+
+            <h2 className="mb-5 text-center text-[15px] font-bold">
+              মসজিদের আয়-ব্যয়ের হিসাব ({titleRange(from, to)})
+            </h2>
 
             <Box
               title={`আয়ের হিসাব (${rangeLabel(from, to)})`}
