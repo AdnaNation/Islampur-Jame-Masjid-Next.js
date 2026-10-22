@@ -6,6 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import LedgerActions from "@/components/LedgerActions";
+import AccountSettings, {
+  useAccountSettings,
+} from "@/components/AccountSettings";
 import {
   YMD,
   amt,
@@ -71,17 +74,16 @@ function ReportView() {
   const today = new Date().toLocaleDateString("en-CA", {
     timeZone: "Asia/Dhaka",
   });
-  const [from, setFrom] = useState(
-    params.get("from") || `${today.slice(0, 4)}-01-01`,
-  );
+  const { data: settings, isPending: settingsPending } = useAccountSettings();
+  const [fromRaw, setFromRaw] = useState(params.get("from") || null);
   const [to, setTo] = useState(params.get("to") || today);
-  const [openingInput, setOpeningInput] = useState("");
+  const from = fromRaw ?? settings?.startDate ?? `${today.slice(0, 4)}-01-01`;
 
   const ready = YMD.test(from) && YMD.test(to) && from <= to;
 
   const { data, isPending, isError, isPlaceholderData } = useQuery({
     queryKey: ["accountReport", from, to],
-    enabled: ready,
+    enabled: ready && !settingsPending,
     queryFn: async () =>
       (await axiosPublic.get("/transactions/report", { params: { from, to } }))
         .data,
@@ -89,8 +91,8 @@ function ReportView() {
   });
 
   const report = useMemo(
-    () => (data && ready ? buildReport(data, from, openingInput) : null),
-    [data, ready, from, openingInput],
+    () => (data && ready ? buildReport(data, from) : null),
+    [data, ready, from],
   );
 
   const accountsLink = `/dashboard/accounts${
@@ -110,17 +112,17 @@ function ReportView() {
 
       <div className="mb-5 space-y-3 print:hidden">
         <div className="flex flex-wrap items-end justify-center gap-3">
-          <label className="block">
+          <label className="block min-w-0">
             <span className="block text-xs text-slate-500">শুরুর তারিখ</span>
             <input
               type="date"
               value={from}
               max={to || undefined}
-              onChange={(e) => setFrom(e.target.value)}
+              onChange={(e) => setFromRaw(e.target.value)}
               className={field}
             />
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="block text-xs text-slate-500">শেষ তারিখ</span>
             <input
               type="date"
@@ -130,27 +132,12 @@ function ReportView() {
               className={field}
             />
           </label>
-          <label className="block">
-            <span className="block text-xs text-slate-500">
-              পূর্বের অবশিষ্ট ফান্ড (৳)
-            </span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="any"
-              value={openingInput}
-              onChange={(e) => setOpeningInput(e.target.value)}
-              placeholder={
-                report ? `স্বয়ংক্রিয়: ${report.autoOpening}` : "স্বয়ংক্রিয়"
-              }
-              className={`${field} w-44`}
-            />
-          </label>
         </div>
+        <AccountSettings />
         <p className="text-xs text-center text-slate-500">
-          শুরুর তারিখের আগের সব আয়-ব্যয়ের হিসাব থেকে “অবশিষ্ট ফান্ড” নিজে
-          থেকেই বের হয়। আগের এন্ট্রি না থাকলে বা অন্য অঙ্ক দিতে চাইলে ঘরে নিজে
-          লিখুন। ০ লিখলে ওই লাইন বাদ যাবে।
+          “পূর্বের অবশিষ্ট ফান্ড” সংরক্ষিত শুরুর ফান্ড থেকে নিজে থেকেই আসে।
+          শুরুর তারিখ থেকে অন্য তারিখ বেছে নিলে মাঝের আয়-ব্যয়ও হিসাব হয়।
+          বদলাতে উপরের “পরিবর্তন” চাপুন।
         </p>
 
         {data?.memberFees?.total > 0 && (
@@ -162,7 +149,12 @@ function ReportView() {
           </p>
         )}
 
-        {ready && report && <LedgerActions fileName="accounts-report" />}
+        {ready && report && (
+          <LedgerActions
+            containerId="report-sheet"
+            fileName="accounts-report"
+          />
+        )}
         <p className="text-xs text-center text-slate-500">
           PDF-এর জন্য “প্রিন্ট / PDF” চেপে “Save as PDF” ও “Portrait” বেছে নিন।
         </p>

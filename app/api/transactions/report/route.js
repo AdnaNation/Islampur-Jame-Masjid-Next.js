@@ -6,6 +6,7 @@ import {
   validDate,
   memberFeeSummary,
   mergeMemberRow,
+  openingAt,
 } from "@/lib/accounts";
 
 const r2 = (n) => Math.round(n * 100) / 100;
@@ -20,7 +21,7 @@ export async function GET(request) {
   const fromYmd = sp.get("from");
   const toYmd = sp.get("to");
   const { transactionCollection } = await getAccountCollections();
-  const [grouped, before, member] = await Promise.all([
+  const [grouped, member, opening] = await Promise.all([
     transactionCollection
       .aggregate([
         { $match: { date: { $gte: from, $lte: to } } },
@@ -33,13 +34,8 @@ export async function GET(request) {
         },
       ])
       .toArray(),
-    transactionCollection
-      .aggregate([
-        { $match: { date: { $lt: from } } },
-        { $group: { _id: "$type", total: { $sum: "$amount" } } },
-      ])
-      .toArray(),
     memberFeeSummary(fromYmd, toYmd),
+    openingAt(fromYmd),
   ]);
 
   grouped.sort((a, b) =>
@@ -51,10 +47,9 @@ export async function GET(request) {
       .map((g) => ({ name: g.name, total: r2(g.total) }));
   const income = mergeMemberRow(rows("income"), member.total);
   const expense = rows("expense");
-  const beforeOf = (type) => before.find((b) => b._id === type)?.total || 0;
 
   return NextResponse.json({
-    opening: r2(beforeOf("income") + member.before - beforeOf("expense")),
+    opening,
     income,
     expense,
     totalIncome: r2(income.reduce((a, r) => a + r.total, 0)),

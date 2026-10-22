@@ -9,6 +9,7 @@ import {
   cleanAmount,
   memberFeeSummary,
   MEMBER_CATEGORY,
+  openingAt,
 } from "@/lib/accounts";
 
 export async function GET(request) {
@@ -31,7 +32,7 @@ export async function GET(request) {
 
   const withMembers = type !== "expense" && !match.categoryId;
   const { transactionCollection } = await getAccountCollections();
-  const [items, grouped, member] = await Promise.all([
+  const [items, grouped, member, opening] = await Promise.all([
     transactionCollection
       .find(match)
       .sort({ date: -1, createdAt: -1 })
@@ -52,6 +53,7 @@ export async function GET(request) {
     withMembers
       ? memberFeeSummary(sp.get("from") || undefined, sp.get("to") || undefined)
       : null,
+    validDate(from) ? openingAt(sp.get("from")) : null,
   ]);
 
   let income = 0;
@@ -105,6 +107,7 @@ export async function GET(request) {
     income: Math.round(income * 100) / 100,
     expense: Math.round(expense * 100) / 100,
     byCategory,
+    opening,
   });
 }
 

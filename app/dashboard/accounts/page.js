@@ -17,11 +17,15 @@ import {
   MdSettings,
 } from "react-icons/md";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
+import AccountSettings, {
+  useAccountSettings,
+} from "@/components/AccountSettings";
 
 const PAGE_SIZE = 50;
 
 const nf = new Intl.NumberFormat("bn-BD", { maximumFractionDigits: 2 });
 const money = (n) => `৳${nf.format(n || 0)}`;
+const signedMoney = (n) => `${n < 0 ? "−" : ""}${money(Math.abs(n))}`;
 const dhakaYmd = (d) =>
   new Date(d).toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" }); // yyyy-mm-dd
 const showDate = (d) =>
@@ -43,7 +47,7 @@ const toast = (title) =>
   });
 
 const field =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#0f3d2e] focus:outline-none";
+  "w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#0f3d2e] focus:outline-none";
 const blankForm = () => ({
   type: "income",
   categoryId: "",
@@ -71,10 +75,12 @@ const AccountsPage = () => {
   );
 
   // ---------- filters + history ----------
-  const [fType, setFType] = useState("all"); // all | income | expense
+  const [fType, setFType] = useState("all");
   const [fCat, setFCat] = useState("");
-  const [fFrom, setFFrom] = useState("");
+  const { data: settings, isPending: settingsPending } = useAccountSettings();
+  const [fFromRaw, setFFromRaw] = useState(null);
   const [fTo, setFTo] = useState("");
+  const fFrom = fFromRaw ?? settings?.startDate ?? "";
   const [limit, setLimit] = useState(PAGE_SIZE);
   useEffect(() => setLimit(PAGE_SIZE), [fType, fCat, fFrom, fTo]);
 
@@ -92,13 +98,17 @@ const AccountsPage = () => {
           },
         })
       ).data,
+    enabled: !settingsPending,
     placeholderData: keepPreviousData,
   });
 
   const items = data?.items || [];
   const income = data?.income || 0;
   const expense = data?.expense || 0;
-  const hasFilter = fType !== "all" || fCat || fFrom || fTo;
+  const hasFilter = fType !== "all" || fCat || fFromRaw !== null || fTo;
+  const showFund = data?.opening != null && fType === "all" && !fCat;
+  const opening = data?.opening ?? 0;
+  const closing = opening + income - expense;
 
   const filterCats = useMemo(
     () =>
@@ -117,7 +127,7 @@ const AccountsPage = () => {
   const clearFilters = () => {
     setFType("all");
     setFCat("");
-    setFFrom("");
+    setFFromRaw(null);
     setFTo("");
   };
 
@@ -125,7 +135,7 @@ const AccountsPage = () => {
   const [form, setForm] = useState(blankForm);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [newCat, setNewCat] = useState(null); // null = hidden, string = typing
+  const [newCat, setNewCat] = useState(null);
   const formCats = form.type === "income" ? incomeCats : expenseCats;
 
   const setType = (type) => {
@@ -262,7 +272,7 @@ const AccountsPage = () => {
               key={c._id}
               className="flex items-center justify-between gap-2 px-3 py-1.5 text-sm rounded-lg bg-slate-50"
             >
-              <span className="truncate">{c.name}</span>
+              <span className="flex-1 min-w-0 break-words">{c.name}</span>
               <span className="flex gap-2 shrink-0 text-slate-500">
                 <button
                   onClick={() => renameCategory(c)}
@@ -288,18 +298,24 @@ const AccountsPage = () => {
   const isIncome = form.type === "income";
 
   return (
-    <div className="max-w-4xl p-3 mx-auto space-y-4 sm:p-5">
-      <div className="flex items-center justify-between gap-2">
+    <div className="w-full max-w-4xl min-w-0 p-3 mx-auto space-y-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-[#0f3d2e]">আয়-ব্যয়ের হিসাব</h1>
         <Link
           href={`/dashboard/accounts/report${
-            fFrom && fTo ? `?from=${fFrom}&to=${fTo}` : ""
+            fFrom || fTo
+              ? `?${[fFrom && `from=${fFrom}`, fTo && `to=${fTo}`]
+                  .filter(Boolean)
+                  .join("&")}`
+              : ""
           }`}
           className="flex items-center gap-1 rounded-lg bg-[#0f3d2e] px-3 py-2 text-sm font-semibold text-white"
         >
           <MdPictureAsPdf /> রিপোর্ট (PDF / ছবি)
         </Link>
       </div>
+
+      <AccountSettings />
 
       {/* ---------- add / edit ---------- */}
       <form
@@ -341,7 +357,7 @@ const AccountsPage = () => {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
+          <label className="block min-w-0">
             <span className="text-xs text-slate-500">ক্যাটাগরি</span>
             <select
               value={form.categoryId}
@@ -361,7 +377,7 @@ const AccountsPage = () => {
               <option value="__new">＋ নতুন ক্যাটাগরি যোগ করুন</option>
             </select>
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="text-xs text-slate-500">টাকার পরিমাণ</span>
             <input
               type="number"
@@ -378,7 +394,7 @@ const AccountsPage = () => {
         </div>
 
         {newCat !== null && (
-          <div className="flex gap-2 p-3 rounded-lg bg-slate-50">
+          <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-slate-50">
             <input
               autoFocus
               value={newCat}
@@ -389,23 +405,21 @@ const AccountsPage = () => {
                   if (newCat.trim()) addCategory();
                 }
               }}
-              placeholder={`নতুন ${isIncome ? "আয়ের" : "ব্যয়ের"} ক্যাটাগরির নাম (যেমন: ${
-                isIncome ? "জুমার আয়" : "বিদ্যুৎ বিল"
-              })`}
-              className={field}
+              placeholder={`যেমন: ${isIncome ? "জুমার আয়" : "বিদ্যুৎ বিল"}`}
+              className={`${field} basis-full sm:flex-1 sm:basis-0`}
             />
             <button
               type="button"
               disabled={!newCat.trim()}
               onClick={addCategory}
-              className="px-4 text-sm font-semibold text-white rounded-lg bg-[#0f3d2e] disabled:opacity-40"
+              className="flex-1 px-4 py-2 text-sm font-semibold text-white rounded-lg sm:flex-none bg-[#0f3d2e] disabled:opacity-40"
             >
               যোগ
             </button>
             <button
               type="button"
               onClick={() => setNewCat(null)}
-              className="px-3 text-sm rounded-lg bg-slate-200"
+              className="flex-1 px-3 py-2 text-sm rounded-lg sm:flex-none bg-slate-200"
             >
               বাতিল
             </button>
@@ -413,7 +427,7 @@ const AccountsPage = () => {
         )}
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
+          <label className="block min-w-0">
             <span className="text-xs text-slate-500">তারিখ</span>
             <input
               type="date"
@@ -423,7 +437,7 @@ const AccountsPage = () => {
               className={field}
             />
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="text-xs text-slate-500">নোট (ঐচ্ছিক)</span>
             <input
               value={form.note}
@@ -509,7 +523,7 @@ const AccountsPage = () => {
           ))}
         </div>
         <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
-          <label className="block">
+          <label className="block min-w-0">
             <span className="text-xs text-slate-500">ক্যাটাগরি</span>
             <select
               value={fCat}
@@ -527,17 +541,17 @@ const AccountsPage = () => {
               ))}
             </select>
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="text-xs text-slate-500">শুরুর তারিখ</span>
             <input
               type="date"
               value={fFrom}
               max={fTo || undefined}
-              onChange={(e) => setFFrom(e.target.value)}
+              onChange={(e) => setFFromRaw(e.target.value)}
               className={field}
             />
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="text-xs text-slate-500">শেষ তারিখ</span>
             <input
               type="date"
@@ -559,31 +573,87 @@ const AccountsPage = () => {
       </div>
 
       {/* ---------- summary ---------- */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <div className="p-3 rounded-xl bg-emerald-50">
-          <p className="text-xs text-emerald-700">মোট আয়</p>
-          <p className="text-base font-bold sm:text-xl text-emerald-800">
-            {money(income)}
-          </p>
-        </div>
-        <div className="p-3 rounded-xl bg-rose-50">
-          <p className="text-xs text-rose-700">মোট ব্যয়</p>
-          <p className="text-base font-bold sm:text-xl text-rose-800">
-            {money(expense)}
-          </p>
-        </div>
-        <div className="p-3 rounded-xl bg-slate-100">
-          <p className="text-xs text-slate-600">ব্যালেন্স</p>
-          <p
-            className={`text-base font-bold sm:text-xl ${
-              income - expense < 0 ? "text-rose-700" : "text-[#0f3d2e]"
+      {(() => {
+        const cards = showFund
+          ? [
+              [
+                "শুরুর ফান্ড",
+                signedMoney(opening),
+                "bg-slate-100",
+                "text-slate-600",
+                "text-[#0f3d2e]",
+              ],
+              [
+                "মোট আয়",
+                money(income),
+                "bg-emerald-50",
+                "text-emerald-700",
+                "text-emerald-800",
+              ],
+              [
+                "মোট ব্যয়",
+                money(expense),
+                "bg-rose-50",
+                "text-rose-700",
+                "text-rose-800",
+              ],
+              [
+                "অবশিষ্ট ফান্ড",
+                signedMoney(closing),
+                "bg-slate-100",
+                "text-slate-600",
+                closing < 0 ? "text-rose-700" : "text-[#0f3d2e]",
+              ],
+            ]
+          : [
+              [
+                "মোট আয়",
+                money(income),
+                "bg-emerald-50",
+                "text-emerald-700",
+                "text-emerald-800",
+              ],
+              [
+                "মোট ব্যয়",
+                money(expense),
+                "bg-rose-50",
+                "text-rose-700",
+                "text-rose-800",
+              ],
+              [
+                "ব্যালেন্স",
+                signedMoney(income - expense),
+                "bg-slate-100",
+                "text-slate-600",
+                income - expense < 0 ? "text-rose-700" : "text-[#0f3d2e]",
+              ],
+            ];
+        return (
+          <div
+            className={`grid grid-cols-2 gap-2 sm:gap-3 ${
+              cards.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"
             }`}
           >
-            {income - expense < 0 ? "−" : ""}
-            {money(Math.abs(income - expense))}
-          </p>
-        </div>
-      </div>
+            {cards.map(([label, value, box, labelCls, valueCls], i) => (
+              <div
+                key={label}
+                className={`min-w-0 rounded-xl p-3 ${box} ${
+                  cards.length === 3 && i === 2
+                    ? "col-span-2 sm:col-span-1"
+                    : ""
+                }`}
+              >
+                <p className={`text-xs ${labelCls}`}>{label}</p>
+                <p
+                  className={`break-words text-base font-bold sm:text-xl ${valueCls}`}
+                >
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {(incomeBreak.length > 0 || expenseBreak.length > 0) && (
         <div className="grid gap-4 p-4 bg-white border rounded-xl border-slate-200 sm:grid-cols-2">
@@ -593,14 +663,17 @@ const AccountsPage = () => {
           ].map(
             ([title, list, color]) =>
               list.length > 0 && (
-                <div key={title}>
+                <div key={title} className="min-w-0">
                   <p className={`mb-1 text-sm font-semibold ${color}`}>
                     {title}
                   </p>
-                  <ul className="space-y-1 text-sm">
+                  <ul className="space-y-1.5 text-sm">
                     {list.map((c) => (
-                      <li key={c.name} className="flex justify-between gap-2">
-                        <span className="truncate text-slate-600">
+                      <li
+                        key={c.name}
+                        className="flex items-start justify-between gap-3"
+                      >
+                        <span className="flex-1 min-w-0 break-words text-slate-600">
                           {c.name}{" "}
                           <span className="text-xs text-slate-400">
                             ({nf.format(c.count)})
@@ -611,7 +684,7 @@ const AccountsPage = () => {
                             </span>
                           )}
                         </span>
-                        <span className="font-medium shrink-0">
+                        <span className="font-medium whitespace-nowrap shrink-0">
                           {money(c.total)}
                         </span>
                       </li>
@@ -660,7 +733,7 @@ const AccountsPage = () => {
                   }`}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900">
+                  <p className="font-semibold break-words text-slate-900">
                     {it.categoryName}
                   </p>
                   {it.note && (
@@ -670,7 +743,7 @@ const AccountsPage = () => {
                   )}
                   <p className="text-xs text-slate-400">{showDate(it.date)}</p>
                 </div>
-                <div className="text-right shrink-0">
+                <div className="text-right shrink-0 whitespace-nowrap">
                   <p
                     className={`font-bold ${
                       it.type === "income"
