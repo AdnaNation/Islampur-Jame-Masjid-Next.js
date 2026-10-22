@@ -8,6 +8,7 @@ import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
 import { getLocalStorage } from "@/lib/localStorage";
 import LedgerActions from "@/components/LedgerActions";
+import { PageLoader, SectionLoader } from "@/components/Loader";
 
 const MONTHS = [
   "জানু",
@@ -126,7 +127,7 @@ function LedgerView() {
         </p>
       </div>
 
-      {isPending && <p className="text-center print:hidden">লোড হচ্ছে...</p>}
+      {isPending && <SectionLoader label="বার্ষিক তালিকা তৈরি হচ্ছে..." />}
       {isError && (
         <p className="text-center text-red-600 print:hidden">
           ডেটা আনা যায়নি। এডমিন হিসেবে সাইন ইন করা আছে কিনা দেখুন।
@@ -262,7 +263,7 @@ function LedgerView() {
 
 export default function LedgerPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <LedgerView />
     </Suspense>
   );

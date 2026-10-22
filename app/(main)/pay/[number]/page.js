@@ -8,6 +8,7 @@ import useAxiosPublic from "@/hooks/useAxiosPublic";
 import monthTranslation from "@/lib/monthTranslation";
 import { formatMonthRange } from "@/lib/monthRange";
 import PaymentHistory from "@/components/PaymentHistory";
+import { BtnLoading, SectionLoader } from "@/components/Loader";
 
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
 const WHATSAPP_NUMBER = "8801776236285";
@@ -193,9 +194,7 @@ const DirectPaymentPage = () => {
       </p>
 
       {/* Looking up the member from the URL */}
-      {step === "loading" && (
-        <p className="text-sm text-center text-gray-400">তথ্য লোড হচ্ছে...</p>
-      )}
+      {step === "loading" && <SectionLoader label="তথ্য লোড হচ্ছে..." />}
 
       {/* Number in the URL didn't match any member */}
       {step === "notFound" && (
@@ -504,7 +503,11 @@ const DirectPaymentPage = () => {
               disabled={submitting}
               className="w-full btn btn-info"
             >
-              {submitting ? "পাঠানো হচ্ছে..." : "যাচাইয়ের জন্য জমা দিন"}
+              {submitting ? (
+                <BtnLoading text="পাঠানো হচ্ছে..." />
+              ) : (
+                "যাচাইয়ের জন্য জমা দিন"
+              )}
             </button>
             <button
               type="button"

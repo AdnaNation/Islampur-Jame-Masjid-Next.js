@@ -8,7 +8,6 @@ import {
 } from "@tanstack/react-query";
 import Link from "next/link";
 import Swal from "sweetalert2";
-import { FiLoader } from "react-icons/fi";
 import {
   MdDelete,
   MdEdit,
@@ -20,6 +19,7 @@ import useAxiosPublic from "@/hooks/useAxiosPublic";
 import AccountSettings, {
   useAccountSettings,
 } from "@/components/AccountSettings";
+import { BtnLoading, EntryListSkeleton } from "@/components/Loader";
 
 const PAGE_SIZE = 50;
 
@@ -457,13 +457,15 @@ const AccountsPage = () => {
               isIncome ? "bg-emerald-600" : "bg-rose-600"
             }`}
           >
-            {saving
-              ? "সংরক্ষণ হচ্ছে..."
-              : editingId
-                ? "আপডেট করুন"
-                : isIncome
-                  ? "আয় যোগ করুন"
-                  : "ব্যয় যোগ করুন"}
+            {saving ? (
+              <BtnLoading text="সংরক্ষণ হচ্ছে..." />
+            ) : editingId ? (
+              "আপডেট করুন"
+            ) : isIncome ? (
+              "আয় যোগ করুন"
+            ) : (
+              "ব্যয় যোগ করুন"
+            )}
           </button>
           {editingId && (
             <button
@@ -702,9 +704,7 @@ const AccountsPage = () => {
           মোট {nf.format(data?.count || 0)} টি এন্ট্রি
         </p>
         {isPending ? (
-          <div className="flex justify-center mt-8 text-2xl text-gray-400 animate-spin">
-            <FiLoader />
-          </div>
+          <EntryListSkeleton />
         ) : isError ? (
           <p className="text-sm text-center text-rose-600">
             লোড হয়নি।{" "}

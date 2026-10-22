@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
 import useNumbers from "@/hooks/useNumbers";
+import { BtnLoading, DotsLoader, InlineLoader } from "@/components/Loader";
 
 const MessagesPage = () => {
   const axiosPublic = useAxiosPublic();
@@ -247,7 +248,7 @@ const MessagesPage = () => {
       <h1 className="mb-1 text-xl font-bold">মেসেজ পাঠান</h1>
       {balance !== undefined && (
         <p className="mb-4 text-sm text-gray-500">
-          SMS ব্যালেন্সঃ {balance?.balance ?? "লোড হচ্ছে..."}
+          SMS ব্যালেন্সঃ {balance?.balance ?? <DotsLoader className="ml-1" />}
         </p>
       )}
 
@@ -314,7 +315,7 @@ const MessagesPage = () => {
             </select>
           )}
 
-          {loadingUser && <p className="text-sm text-gray-400">লোড হচ্ছে...</p>}
+          {loadingUser && <InlineLoader className="text-sm" />}
 
           {selectedUser && (
             <p className="text-sm text-gray-500">
@@ -350,11 +351,13 @@ const MessagesPage = () => {
             disabled={loadingDue}
             className="checkbox checkbox-sm"
           />
-          {loadingDue
-            ? "লোড হচ্ছে..."
-            : dueOnly
-              ? `শুধু বকেয়াদার (${dueNumbers.length} জন)`
-              : "শুধু বকেয়াদারদের পাঠান"}
+          {loadingDue ? (
+            <InlineLoader />
+          ) : dueOnly ? (
+            `শুধু বকেয়াদার (${dueNumbers.length} জন)`
+          ) : (
+            "শুধু বকেয়াদারদের পাঠান"
+          )}
         </label>
       )}
 
@@ -377,13 +380,15 @@ const MessagesPage = () => {
         }
         className="w-full btn btn-info disabled:opacity-50"
       >
-        {sending
-          ? "পাঠানো হচ্ছে..."
-          : mode === "single"
-            ? "পাঠান"
-            : mode === "custom"
-              ? `পাঠান (${parsedCustomNumbers.length} জন)`
-              : `সবাইকে পাঠান (${dueOnly ? dueNumbers.length : numbers.length} জন)`}
+        {sending ? (
+          <BtnLoading text="পাঠানো হচ্ছে..." />
+        ) : mode === "single" ? (
+          "পাঠান"
+        ) : mode === "custom" ? (
+          `পাঠান (${parsedCustomNumbers.length} জন)`
+        ) : (
+          `সবাইকে পাঠান (${dueOnly ? dueNumbers.length : numbers.length} জন)`
+        )}
       </button>
     </div>
   );

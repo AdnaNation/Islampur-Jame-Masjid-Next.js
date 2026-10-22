@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
+import { HistorySkeleton } from "./Loader";
 
 const TYPE_LABEL = {
   Monthly: "মাসিক চাঁদা",
@@ -62,10 +63,7 @@ const PaymentHistory = ({ userId }) => {
     <div className="space-y-3">
       <h2 className="text-base font-semibold">পেমেন্ট হিস্ট্রি (গত ২ বছর)</h2>
 
-      {loading && (
-        <p className="text-sm text-center text-gray-400">লোড হচ্ছে...</p>
-      )}
-
+      {loading && <HistorySkeleton />}
       {!loading && error && (
         <p className="text-sm text-red-600">পেমেন্ট হিস্ট্রি লোড করা যায়নি।</p>
       )}

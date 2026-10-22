@@ -2,6 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes loader-moon {
+  0%, 100% { transform: scale(1) rotate(-8deg); opacity: 0.85; }
+  50% { transform: scale(1.12) rotate(8deg); opacity: 1; }
+}
+@keyframes loader-star {
+  0%, 100% { opacity: 0.25; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+@keyframes loader-shimmer {
+  100% { transform: translateX(100%); }
+}
+@keyframes loader-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+.loader-moon { animation: loader-moon 2.2s ease-in-out infinite; }
+.loader-star { animation: loader-star 1.6s ease-in-out infinite; }
+.loader-bar  { animation: loader-progress 1.3s ease-in-out infinite; }
+
+/* Shimmering placeholder block */
+.sk {
+  position: relative;
+  overflow: hidden;
+  background-color: #e2e8f0;
+  border-radius: 0.375rem;
+}
+.sk::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
+  animation: loader-shimmer 1.4s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-moon, .loader-star, .loader-bar, .sk::after { animation: none; }
+}
+
 @media print {
   @page {
     margin: 10mm;

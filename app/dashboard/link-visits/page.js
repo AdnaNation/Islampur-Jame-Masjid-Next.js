@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
+import { CardListSkeleton } from "@/components/Loader";
 
 const LinkVisitsPage = () => {
   const axiosPublic = useAxiosPublic();
@@ -18,7 +19,7 @@ const LinkVisitsPage = () => {
     <div className="max-w-2xl min-h-screen p-4 mx-auto">
       <h1 className="mb-4 text-xl font-bold">পেমেন্ট লিংক ভিজিট হিস্টোরি</h1>
 
-      {isPending && <p className="text-gray-400">লোড হচ্ছে...</p>}
+      {isPending && <CardListSkeleton />}
       {!isPending && visits.length === 0 && (
         <p className="text-gray-400">এখনো কেউ লিংক চেক করেনি।</p>
       )}

@@ -17,6 +17,7 @@ import {
 import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useNumbers from "@/hooks/useNumbers";
+import { BtnLoading } from "@/components/Loader";
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-IN");
 
@@ -260,7 +261,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen p-3 mx-auto space-y-4 max-w-5xl md:p-6 bg-orange-50">
+    <div className="max-w-5xl min-h-screen p-3 mx-auto space-y-4 md:p-6 bg-orange-50">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
@@ -390,17 +391,21 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-2 gap-2 mt-3">
             <button
               onClick={smsHandle}
-              className="text-white border-0 btn btn-sm h-10 bg-sky-600 hover:bg-sky-700"
+              className="h-10 text-white border-0 btn btn-sm bg-sky-600 hover:bg-sky-700"
             >
               <MdSms className="text-lg" />
-              {loading ? "পাঠানো হচ্ছে..." : "SMS পাঠান"}
+              {loading ? <BtnLoading text="পাঠানো হচ্ছে..." /> : "SMS পাঠান"}
             </button>
             <button
               onClick={handleWhatsapp}
               className="text-white border-0 btn btn-sm h-10 bg-[#25D366] hover:bg-[#1ebe5b]"
             >
               <MdWhatsapp className="text-lg" />
-              {loading3 ? "পাঠানো হচ্ছে..." : "WhatsApp পাঠান"}
+              {loading3 ? (
+                <BtnLoading text="পাঠানো হচ্ছে..." />
+              ) : (
+                "WhatsApp পাঠান"
+              )}
             </button>
           </div>
         </div>
@@ -423,11 +428,13 @@ const AdminDashboard = () => {
           onClick={confirmClosingYear}
           className="text-white border-0 btn btn-sm bg-rose-600 hover:bg-rose-700 disabled:bg-gray-300 disabled:text-gray-500"
         >
-          {loading2
-            ? "বন্ধ হচ্ছে..."
-            : closingYear
-              ? `${closingYear}-এর হিসাব বন্ধ করুন`
-              : "লোড হচ্ছে..."}
+          {loading2 ? (
+            <BtnLoading text="বন্ধ হচ্ছে..." />
+          ) : closingYear ? (
+            `${closingYear}-এর হিসাব বন্ধ করুন`
+          ) : (
+            <BtnLoading text="লোড হচ্ছে..." />
+          )}
         </button>
       </div>
     </div>

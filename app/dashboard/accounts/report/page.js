@@ -18,6 +18,7 @@ import {
   titleRange,
 } from "@/lib/accountReport";
 import Letterhead from "@/components/Letterhead";
+import { PageLoader, ReportSkeleton } from "@/components/Loader";
 
 const field =
   "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#0f3d2e] focus:outline-none";
@@ -197,9 +198,7 @@ function ReportView() {
           সঠিক তারিখের ব্যাপ্তি দিন (শুরু ≤ শেষ)।
         </p>
       )}
-      {ready && isPending && (
-        <p className="text-center print:hidden">লোড হচ্ছে...</p>
-      )}
+      {ready && isPending && <ReportSkeleton />}
       {ready && isError && (
         <p className="text-center text-rose-600 print:hidden">
           রিপোর্ট লোড করা যায়নি।
@@ -265,7 +264,7 @@ function ReportView() {
 
 export default function AccountsReportPage() {
   return (
-    <Suspense fallback={<p className="p-6 text-center">লোড হচ্ছে...</p>}>
+    <Suspense fallback={<PageLoader />}>
       <ReportView />
     </Suspense>
   );

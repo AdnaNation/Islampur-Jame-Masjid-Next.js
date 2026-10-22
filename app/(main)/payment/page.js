@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { FiLoader } from "react-icons/fi";
 import {
   MdCalendarMonth,
   MdFilterAltOff,
@@ -16,6 +15,7 @@ import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
 import useAdmin from "@/hooks/useAdmin";
+import { BtnLoading, SectionLoader } from "@/components/Loader";
 
 const fmt = (n) => (Number(n) || 0).toLocaleString("en-IN");
 
@@ -313,7 +313,7 @@ const PaymentHistory = () => {
               <button
                 type="button"
                 onClick={clearRange}
-                className="flex items-center justify-center gap-1 px-4 text-sm font-medium text-gray-600 rounded-lg h-12 bg-stone-100 hover:bg-stone-200"
+                className="flex items-center justify-center h-12 gap-1 px-4 text-sm font-medium text-gray-600 rounded-lg bg-stone-100 hover:bg-stone-200"
               >
                 <MdFilterAltOff /> মুছুন
               </button>
@@ -354,15 +354,15 @@ const PaymentHistory = () => {
           )}
         </div>
 
-        {/* States */}
         {isPending && (
-          <div className="flex justify-center mt-16 text-3xl text-gray-400 animate-spin">
-            <FiLoader />
-          </div>
+          <SectionLoader
+            label="পেমেন্ট তালিকা লোড হচ্ছে..."
+            className="mt-10"
+          />
         )}
 
         {data?.data && filtered.length === 0 && hasRange && (
-          <div className="max-w-sm p-6 mx-auto mt-10 text-center bg-white border border-amber-100 shadow-sm rounded-2xl">
+          <div className="max-w-sm p-6 mx-auto mt-10 text-center bg-white border shadow-sm border-amber-100 rounded-2xl">
             <MdSearchOff className="mx-auto text-4xl text-amber-400" />
             <p className="mt-2 text-sm font-medium text-amber-700">
               নির্বাচিত তারিখের মধ্যে কোনো পেমেন্ট নেই!
@@ -371,7 +371,7 @@ const PaymentHistory = () => {
         )}
 
         {data?.data?.length === 0 && (
-          <div className="max-w-sm p-6 mx-auto mt-10 text-center bg-white border border-rose-100 shadow-sm rounded-2xl">
+          <div className="max-w-sm p-6 mx-auto mt-10 text-center bg-white border shadow-sm border-rose-100 rounded-2xl">
             <MdSearchOff className="mx-auto text-4xl text-rose-400" />
             <p className="mt-2 text-sm font-medium text-rose-700">
               {tab === "reverted"
@@ -462,9 +462,11 @@ const PaymentHistory = () => {
                         onClick={() => handleRevert(history)}
                         className="px-3 py-1 text-xs font-medium text-red-600 rounded-full bg-red-50 hover:bg-red-100 disabled:opacity-50"
                       >
-                        {revertingId === history._id
-                          ? "বাতিল হচ্ছে..."
-                          : "বাতিল করুন"}
+                        {revertingId === history._id ? (
+                          <BtnLoading text="বাতিল হচ্ছে..." />
+                        ) : (
+                          "বাতিল করুন"
+                        )}
                       </button>
                     </div>
                   </>

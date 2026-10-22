@@ -8,6 +8,7 @@ import useHomeName from "@/hooks/useHomeName";
 import monthTranslation from "@/lib/monthTranslation";
 import { formatMonthRange } from "@/lib/monthRange";
 import PaymentHistory from "@/components/PaymentHistory";
+import { BtnLoading, SectionLoader, Spinner } from "@/components/Loader";
 
 const BKASH_NUMBER = process.env.NEXT_PUBLIC_BKASH_NUMBER;
 const WHATSAPP_NUMBER = "8801776236285";
@@ -261,6 +262,9 @@ const PaymentPage = () => {
             <label className="form-control">
               <div className="label">
                 <span className="label-text">নাম</span>
+                {loadingNames && (
+                  <Spinner size={14} className="text-[#0f3d2e]" />
+                )}
               </div>
               <select
                 value={selectedNameId}
@@ -280,11 +284,7 @@ const PaymentPage = () => {
             </label>
           )}
 
-          {loading && (
-            <p className="text-sm text-center text-gray-400">
-              তথ্য লোড হচ্ছে...
-            </p>
-          )}
+          {loading && <SectionLoader label="তথ্য লোড হচ্ছে..." />}
           {notFound && (
             <p className="text-sm text-red-600">
               তথ্য পাওয়া যায়নি। আবার চেষ্টা করুন।
@@ -595,7 +595,11 @@ const PaymentPage = () => {
               disabled={submitting}
               className="w-full btn btn-info"
             >
-              {submitting ? "পাঠানো হচ্ছে..." : "যাচাইয়ের জন্য জমা দিন"}
+              {submitting ? (
+                <BtnLoading text="পাঠানো হচ্ছে..." />
+              ) : (
+                "যাচাইয়ের জন্য জমা দিন"
+              )}
             </button>
             <button
               type="button"

@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { TableRowsSkeleton } from "@/components/Loader";
 
 const ShopRent = () => {
   const axiosPublic = useAxiosPublic();
@@ -131,6 +132,8 @@ const ShopRent = () => {
               </tr>
             </thead>
             <tbody>
+              {isPending && <TableRowsSkeleton rows={5} cols={4} />}
+
               {shopKeepers?.data?.map((shopKeeper, index) => (
                 <tr
                   onClick={() => handleClick(shopKeeper._id)}
@@ -143,7 +146,6 @@ const ShopRent = () => {
                 </tr>
               ))}
             </tbody>
-            {isPending && <p>Loading....</p>}
           </table>
         </div>
 

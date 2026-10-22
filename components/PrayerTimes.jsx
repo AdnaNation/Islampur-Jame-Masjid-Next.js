@@ -13,6 +13,7 @@ import {
 } from "react-icons/io5";
 import useAdmin from "@/hooks/useAdmin";
 import useModerator from "@/hooks/useModerator";
+import { BtnLoading, PrayerTimesSkeleton } from "./Loader";
 
 // The six waqt cards (these are the ones admins can edit).
 const MAIN_WAQT = [
@@ -173,9 +174,7 @@ const PrayerTimes = () => {
       </div>
 
       <div className="p-4">
-        {isPending && (
-          <div className="py-6 text-center text-gray-400">লোড হচ্ছে...</div>
-        )}
+        {isPending && <PrayerTimesSkeleton />}
 
         {isError && (
           <div className="py-6 text-sm text-center text-red-500">
@@ -259,7 +258,11 @@ const PrayerTimes = () => {
                       disabled={mutation.isPending}
                       className="px-5 py-2 text-white rounded bg-emerald-600 disabled:opacity-50"
                     >
-                      {mutation.isPending ? "সেভ হচ্ছে..." : "সেভ করুন"}
+                      {mutation.isPending ? (
+                        <BtnLoading text="সেভ হচ্ছে..." />
+                      ) : (
+                        "সেভ করুন"
+                      )}
                     </button>
                     <button
                       onClick={() => setIsEditing(false)}

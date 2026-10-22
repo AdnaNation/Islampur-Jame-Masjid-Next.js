@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BtnLoading } from "./Loader";
 
 const btn = "px-4 py-2 text-sm font-semibold rounded-lg disabled:opacity-60";
 
@@ -75,7 +76,11 @@ export default function LedgerActions({
         disabled={busy !== null}
         className={`${btn} text-white bg-[#2f7d57] hover:bg-[#276b4a]`}
       >
-        {busy === "png" ? `অপেক্ষা করুন ${progress}` : "PNG (প্রতি পৃষ্ঠা)"}
+        {busy === "png" ? (
+          <BtnLoading text={`অপেক্ষা করুন ${progress}`} />
+        ) : (
+          "PNG (প্রতি পৃষ্ঠা)"
+        )}
       </button>
       <button
         type="button"
@@ -83,7 +88,16 @@ export default function LedgerActions({
         disabled={busy !== null}
         className={`${btn} text-[#0f3d2e] bg-white border border-[#0f3d2e] hover:bg-slate-50`}
       >
-        {busy === "jpg" ? `অপেক্ষা করুন ${progress}` : "JPG (প্রতি পৃষ্ঠা)"}
+        {busy === "jpg" ? (
+          <BtnLoading text={`অপেক্ষা করুন ${progress}`} />
+        ) : (
+          "JPG (প্রতি পৃষ্ঠা)"
+        )}
+        {busy === "jpg" ? (
+          <BtnLoading text={`অপেক্ষা করুন ${progress}`} />
+        ) : (
+          "JPG (প্রতি পৃষ্ঠা)"
+        )}
       </button>
     </div>
   );

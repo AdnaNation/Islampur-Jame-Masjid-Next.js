@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { FiLoader } from "react-icons/fi";
 import { MdArrowBack, MdChatBubbleOutline, MdSearch } from "react-icons/md";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
+import { ChatListSkeleton, ChatThreadSkeleton } from "@/components/Loader";
 
 const PAGE_SIZE = 100;
 
@@ -176,9 +176,7 @@ const InboxPage = () => {
 
           <div className="flex-1 overflow-y-auto">
             {isPending ? (
-              <div className="flex justify-center mt-10 text-2xl text-gray-400 animate-spin">
-                <FiLoader />
-              </div>
+              <ChatListSkeleton />
             ) : isError ? (
               <div className="p-6 text-sm text-center text-rose-600">
                 লোড হয়নি।{" "}
@@ -268,9 +266,7 @@ const InboxPage = () => {
                 )}
 
                 {!thread ? (
-                  <div className="flex justify-center mt-10 text-2xl text-gray-400 animate-spin">
-                    <FiLoader />
-                  </div>
+                  <ChatThreadSkeleton />
                 ) : (
                   <ul className="space-y-1.5">
                     {items.map((it) =>

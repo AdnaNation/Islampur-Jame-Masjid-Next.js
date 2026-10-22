@@ -6,6 +6,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import useAdmin from "@/hooks/useAdmin";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
+import { Sk } from "@/components/Loader";
 
 // The big payment dialog is only downloaded when it is needed.
 const loadModal = () => import("@/components/fee/FeeDetailsModal");
@@ -62,13 +63,13 @@ const Skeleton = () => (
     {Array.from({ length: 8 }).map((_, i) => (
       <li
         key={i}
-        className="flex items-center gap-3 px-3 py-4 border-l-4 animate-pulse border-slate-200"
+        className="flex items-center gap-3 px-3 py-4 border-l-4 border-slate-200"
       >
         <div className="flex-1 space-y-2">
-          <div className="h-3.5 w-1/2 rounded bg-slate-200" />
-          <div className="w-1/3 h-3 rounded bg-slate-100" />
+          <Sk className="h-3.5 w-1/2" />
+          <Sk className="w-1/3 h-3" />
         </div>
-        <div className="w-10 h-5 rounded bg-slate-200" />
+        <Sk className="w-10 h-5" />
       </li>
     ))}
   </ul>

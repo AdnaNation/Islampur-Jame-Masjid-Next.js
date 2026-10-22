@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FaBook } from "react-icons/fa";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
+import { QuranSkeleton } from "./Loader";
 
 const QuranSection = () => {
   const axiosPublic = useAxiosPublic();
@@ -81,9 +82,7 @@ const QuranSection = () => {
           </audio>
         )}
 
-        {isSurahLoading && (
-          <p className="text-center text-gray-400">লোড হচ্ছে...</p>
-        )}
+        {isSurahLoading && <QuranSkeleton />}
 
         {isError && (
           <p className="text-center text-red-500">

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import useHomeName from "@/hooks/useHomeName";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
+import { BtnLoading } from "../Loader";
 
 const AddUser = () => {
   const [homeName] = useHomeName();
@@ -166,12 +167,13 @@ const AddUser = () => {
           )}
         </div>
         <div className="mt-2 text-center md:w-96 ">
-          <input
+          <button
             disabled={loading}
             type="submit"
-            value="অ্যাড করুন"
             className="btn btn-outline btn-info"
-          />
+          >
+            {loading ? <BtnLoading text="অ্যাড হচ্ছে..." /> : "অ্যাড করুন"}
+          </button>
         </div>
       </form>
     </div>

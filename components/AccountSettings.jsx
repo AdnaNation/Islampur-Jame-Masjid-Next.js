@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import { MdEdit } from "react-icons/md";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import { fullDate } from "@/lib/accountReport";
+import { BtnLoading } from "./Loader";
 
 const nf = new Intl.NumberFormat("bn-BD", { maximumFractionDigits: 2 });
 const field =
@@ -130,7 +131,7 @@ export default function AccountSettings() {
               disabled={saving}
               className="flex-1 rounded-lg bg-[#0f3d2e] py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ করুন"}
+              {saving ? <BtnLoading text="সংরক্ষণ হচ্ছে..." /> : "সংরক্ষণ করুন"}
             </button>
             <button
               type="button"
