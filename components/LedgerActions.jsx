@@ -93,11 +93,6 @@ export default function LedgerActions({
         ) : (
           "JPG (প্রতি পৃষ্ঠা)"
         )}
-        {busy === "jpg" ? (
-          <BtnLoading text={`অপেক্ষা করুন ${progress}`} />
-        ) : (
-          "JPG (প্রতি পৃষ্ঠা)"
-        )}
       </button>
     </div>
   );
