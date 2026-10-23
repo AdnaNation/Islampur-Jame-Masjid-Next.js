@@ -17,6 +17,7 @@ import {
 import { TbCoinTakaFilled } from "react-icons/tb";
 import useAdmin from "@/hooks/useAdmin";
 import { getLocalStorage, removeLocalStorage } from "@/lib/localStorage";
+import { clearApiCache } from "@/lib/pwa";
 
 const LINKS = [
   { href: "/", label: "হোম", Icon: MdHome },
@@ -109,6 +110,7 @@ const Navbar = () => {
 
   const logout = () => {
     removeLocalStorage("Number");
+    clearApiCache();
     setUserNumber(null);
     setOpen(false);
     router.push("/signin");

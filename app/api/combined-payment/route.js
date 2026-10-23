@@ -4,6 +4,7 @@ import { getCollections } from "@/lib/mongodb";
 import { sendSms } from "@/lib/sms";
 import { formatMonthRange } from "@/lib/monthRange";
 import { createPaySlip } from "@/lib/paySlip";
+import { actionTime, withIdempotency } from "@/lib/idempotency";
 
 async function sendConfirmationSms(number, message) {
   if (!number || number.length !== 11) return;
@@ -14,7 +15,7 @@ async function sendConfirmationSms(number, message) {
   }
 }
 
-export async function POST(request) {
+async function createCombinedPayment(request) {
   const body = await request.json();
   const { userId, name, home, monthly, tarabi, due } = body;
 
@@ -29,8 +30,9 @@ export async function POST(request) {
   const userQuery = { _id: new ObjectId(userId) };
   const user = await userCollection.findOne(userQuery);
 
-  const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
-  const year = new Date().getFullYear();
+  const when = actionTime(request);
+  const time = when.toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
+  const year = when.getFullYear();
   const messageParts = [];
   const slipItems = [];
 
@@ -124,3 +126,6 @@ export async function POST(request) {
 
   return NextResponse.json({ success: true, slipId });
 }
+
+export const POST = (request) =>
+  withIdempotency(request, () => createCombinedPayment(request));

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import usePendingQueue from "@/hooks/usePendingQueue";
+import { QUEUED_TEXT, isQueued, newObjectId } from "@/lib/offlineQueue";
 import {
   keepPreviousData,
   useQuery,
@@ -61,10 +63,34 @@ const AccountsPage = () => {
   const queryClient = useQueryClient();
 
   // ---------- categories ----------
-  const { data: categories = [] } = useQuery({
+  const { data: serverCategories = [] } = useQuery({
     queryKey: ["accountCategories"],
     queryFn: async () => (await axiosPublic.get("/account-categories")).data,
   });
+  // changes saved offline that are still waiting to sync
+  const pendingQ = usePendingQueue();
+  // categories created offline can be used straight away
+  const categories = useMemo(() => {
+    const have = new Set(serverCategories.map((c) => String(c._id)));
+    const added = pendingQ
+      .filter(
+        (q) =>
+          q.status === "pending" &&
+          q.method === "POST" &&
+          q.url === "/account-categories" &&
+          q.data?._id &&
+          !have.has(q.data._id),
+      )
+      .map((q) => ({ _id: q.data._id, name: q.data.name, type: q.data.type }));
+    return [...serverCategories, ...added];
+  }, [serverCategories, pendingQ]);
+  const pendingEntries = pendingQ.filter(
+    (q) =>
+      q.status === "pending" &&
+      q.method === "POST" &&
+      q.url === "/transactions",
+  );
+
   const incomeCats = useMemo(
     () => categories.filter((c) => c.type === "income"),
     [categories],
@@ -145,12 +171,14 @@ const AccountsPage = () => {
 
   const addCategory = async () => {
     try {
-      const res = await axiosPublic.post("/account-categories", {
+      const _id = newObjectId();
+      await axiosPublic.post("/account-categories", {
+        _id,
         name: newCat,
         type: form.type,
       });
       await queryClient.invalidateQueries({ queryKey: ["accountCategories"] });
-      setForm((f) => ({ ...f, categoryId: res.data._id }));
+      setForm((f) => ({ ...f, categoryId: _id }));
       setNewCat(null);
     } catch (e) {
       Swal.fire({ icon: "error", title: errMsg(e) });
@@ -163,16 +191,16 @@ const AccountsPage = () => {
       return Swal.fire({ icon: "warning", title: "ক্যাটাগরি বেছে নিন" });
     setSaving(true);
     try {
-      if (editingId)
-        await axiosPublic.patch(`/transactions/${editingId}`, form);
-      else await axiosPublic.post("/transactions", form);
+      const res = editingId
+        ? await axiosPublic.patch(`/transactions/${editingId}`, form)
+        : await axiosPublic.post("/transactions", form);
       await queryClient.invalidateQueries({ queryKey: ["transactions"] });
       // after adding, keep type / category / date so the next entry is quick
       setForm((f) =>
         editingId ? blankForm() : { ...f, amount: "", note: "" },
       );
       setEditingId(null);
-      toast("সংরক্ষণ হয়েছে");
+      toast(isQueued(res) ? QUEUED_TEXT : "সংরক্ষণ হয়েছে");
     } catch (err) {
       Swal.fire({ icon: "error", title: errMsg(err) });
     } finally {
@@ -703,6 +731,47 @@ const AccountsPage = () => {
         <p className="mb-2 text-sm text-slate-500">
           মোট {nf.format(data?.count || 0)} টি এন্ট্রি
         </p>
+        {pendingEntries.length > 0 && (
+          <ul className="mb-3 space-y-2">
+            {pendingEntries.map((q) => (
+              <li
+                key={q.id}
+                className="flex items-start gap-3 p-3 border border-dashed rounded-xl border-amber-400 bg-amber-50"
+              >
+                <span
+                  className={`mt-0.5 h-10 w-1.5 shrink-0 rounded-full ${
+                    q.data.type === "income" ? "bg-emerald-500" : "bg-rose-500"
+                  }`}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold break-words text-slate-900">
+                    {categories.find(
+                      (c) => String(c._id) === String(q.data.categoryId),
+                    )?.name || "ক্যাটাগরি"}
+                  </p>
+                  {q.data.note && (
+                    <p className="text-sm break-words text-slate-500">
+                      {q.data.note}
+                    </p>
+                  )}
+                  <p className="text-xs text-amber-700">
+                    সিঙ্ক বাকি • {showDate(q.data.date)}
+                  </p>
+                </div>
+                <p
+                  className={`font-bold whitespace-nowrap ${
+                    q.data.type === "income"
+                      ? "text-emerald-700"
+                      : "text-rose-600"
+                  }`}
+                >
+                  {q.data.type === "income" ? "+" : "−"}
+                  {money(q.data.amount)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
         {isPending ? (
           <EntryListSkeleton />
         ) : isError ? (

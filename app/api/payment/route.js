@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
 import { createPaySlip } from "@/lib/paySlip";
 import { parseMonthRange } from "@/lib/monthRange";
+import { withIdempotency } from "@/lib/idempotency";
 
-export async function POST(request) {
+async function createPayment(request) {
   const paymentData = await request.json();
   const { paymentCollection } = await getCollections();
   const result = await paymentCollection.insertOne(paymentData);
@@ -29,3 +30,6 @@ export async function POST(request) {
 
   return NextResponse.json({ ...result, slipId });
 }
+
+export const POST = (request) =>
+  withIdempotency(request, () => createPayment(request));

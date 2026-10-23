@@ -11,6 +11,7 @@ import {
   MEMBER_CATEGORY,
   openingAt,
 } from "@/lib/accounts";
+import { withIdempotency } from "@/lib/idempotency";
 
 export async function GET(request) {
   const sp = new URL(request.url).searchParams;
@@ -111,7 +112,7 @@ export async function GET(request) {
   });
 }
 
-export async function POST(request) {
+async function createTransaction(request) {
   const body = await request.json();
   const { type, categoryId } = body;
   const amount = cleanAmount(body.amount);
@@ -158,3 +159,6 @@ export async function POST(request) {
   const result = await transactionCollection.insertOne(doc);
   return NextResponse.json({ ...doc, _id: result.insertedId });
 }
+
+export const POST = (request) =>
+  withIdempotency(request, () => createTransaction(request));

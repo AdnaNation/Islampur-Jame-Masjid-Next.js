@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import usePendingQueue from "@/hooks/usePendingQueue";
+import { QUEUED_TEXT, applyPendingToUser } from "@/lib/offlineQueue";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 
@@ -110,7 +112,12 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
     placeholderData: user,
     refetchOnWindowFocus: false,
   });
-  const u = data ?? user;
+  // a payment that is still waiting to sync already counts as paid here
+  const pendingQ = usePendingQueue();
+  const u = useMemo(
+    () => applyPendingToUser(data ?? user, pendingQ),
+    [data, user, pendingQ],
+  );
   const src = prev ? u.prevYear || {} : u;
 
   useEffect(() => {
@@ -169,7 +176,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
   };
   const sms = (message) => {
     if (u.Number?.length === 11)
-      axiosPublic.post("/sms", { number: u.Number, message });
+      axiosPublic.post("/sms", { number: u.Number, message }).catch(() => {});
   };
   const record = (extra) =>
     axiosPublic
@@ -197,24 +204,24 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
         id: u._id,
         selectedMonth: monthName,
       });
-      if (res.data.modifiedCount > 0) {
+      if (res.data.queued || res.data.modifiedCount > 0) {
         record({ fee: u.FeeRate, monthName, type: "Monthly" });
         sms(
           `ইসলামপুর জামে মসজিদের ${monthName}'র মাসিক চাঁদা বাবদ ৳${u.FeeRate} পরিশোধ করেছেন।`,
         );
-        done("পরিশোধ সম্পন্ন হয়েছে");
+        done(res.data.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
       }
     });
 
   const payTarabi = () =>
     run(async () => {
       const res = await axiosPublic.patch(`/tarabeePaid/${u._id}`);
-      if (res.data.modifiedCount > 0) {
-        record({ fee: u.Tarabi?.fee, type: "Tarabi" });
+      if (res.data.queued || res.data.modifiedCount > 0) {
+        record({ fee: u.FeeRate, monthName, type: "Monthly" });
         sms(
           `আপনি তারাবীর চাঁদা বাবদ ৳${u.Tarabi?.fee} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
         );
-        done("পরিশোধ সম্পন্ন হয়েছে");
+        done(res.data.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
       }
     });
 
@@ -225,41 +232,39 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
       const res = await axiosPublic.patch(`/payDue/${u._id}`, {
         DueFee: Number(u.Due) - amt,
       });
-      if (res.data.modifiedCount > 0) {
-        record({ fee: amt, type: "Due" });
+      if (res.data.queued || res.data.modifiedCount > 0) {
+        record({ fee: u.FeeRate, monthName, type: "Monthly" });
         sms(
           `আপনি আগের বছরের বকেয়া চাঁদা বাবদ ৳${amt} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
         );
-        done("পরিশোধ সম্পন্ন হয়েছে");
+        done(res.data.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
       }
     });
 
   const payAll = () =>
     run(async () => {
       if (total === 0) return;
-      await axiosPublic
-        .post("/combined-payment", {
-          userId: u._id,
-          name: u.NameBn,
-          home: u.HomeName,
-          monthly: months.length ? { months, amount: monthlyAmt } : null,
-          tarabi: tarabiAmt > 0 ? { amount: tarabiAmt } : null,
-          due: dueAmount > 0 ? { amount: dueAmount } : null,
-        })
-        .then((res) => {
-          if (res?.data?.slipId && u?.Number) {
-            axiosPublic.post("/whatsapp/payment", {
-              to: u.Number,
-              total_amount: total,
-              slipId: res.data.slipId,
-            });
-          }
+      const res = await axiosPublic.post("/combined-payment", {
+        userId: u._id,
+        name: u.NameBn,
+        home: u.HomeName,
+        monthly: months.length ? { months, amount: monthlyAmt } : null,
+        tarabi: tarabiAmt > 0 ? { amount: tarabiAmt } : null,
+        due: dueAmount > 0 ? { amount: dueAmount } : null,
+      });
+      // offline: the server sends the SMS receipt itself when this syncs
+      if (res?.data?.slipId && u?.Number) {
+        axiosPublic.post("/whatsapp/payment", {
+          to: u.Number,
+          total_amount: total,
+          slipId: res.data.slipId,
         });
+      }
       setMonths([]);
       setWithTarabi(false);
       setWithDue(false);
       setDueInput("");
-      done("পরিশোধ সম্পন্ন হয়েছে");
+      done(res?.data?.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
     });
 
   const saveFee = (e) => {
@@ -271,7 +276,8 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
         TarabiFee: f.get("Tarabi"),
         DueFee: f.get("Due"),
       });
-      if (res.data.modifiedCount > 0) done("চাঁদা সেইভ করা হয়েছে");
+      if (res.data.queued || res.data.modifiedCount > 0)
+        done(res.data.queued ? QUEUED_TEXT : "চাঁদা সেইভ করা হয়েছে"); // saveUser: "সেইভ করা হয়েছে"
     });
   };
 
@@ -285,7 +291,8 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
         HomeName: f.get("HomeName"),
         Number: f.get("Number"),
       });
-      if (res.data.modifiedCount > 0) done("সেইভ করা হয়েছে");
+      if (res.data.queued || res.data.modifiedCount > 0)
+        done(res.data.queued ? QUEUED_TEXT : "সেইভ করা হয়েছে");
     });
   };
 

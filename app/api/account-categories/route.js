@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
+import { withIdempotency } from "@/lib/idempotency";
 import { getAccountCollections, TYPES, cleanName } from "@/lib/accounts";
 
 const byBn = (a, b) => (a || "").localeCompare(b || "", "bn");
 
+// GET -> all categories (income first, then expense; A-Z within each)
 export async function GET() {
   const { categoryCollection } = await getAccountCollections();
   const list = await categoryCollection.find({}).toArray();
@@ -12,7 +15,8 @@ export async function GET() {
   return NextResponse.json(list);
 }
 
-export async function POST(request) {
+// POST { _id?, name, type } -> create a category
+async function createCategory(request) {
   const body = await request.json();
   const name = cleanName(body.name);
   const type = body.type;
@@ -26,9 +30,20 @@ export async function POST(request) {
     );
 
   const { categoryCollection } = await getAccountCollections();
+
+  // the phone may send its own id (so the category is usable before it is synced)
+  const wantedId =
+    ObjectId.isValid(body._id) && String(body._id).length === 24
+      ? new ObjectId(body._id)
+      : null;
+  if (wantedId) {
+    const same = await categoryCollection.findOne({ _id: wantedId });
+    if (same) return NextResponse.json(same); // already created: a repeat is a success
+  }
+
   const exists = await categoryCollection.findOne(
     { type, name },
-    { collation: { locale: "en", strength: 2 } },
+    { collation: { locale: "en", strength: 2 } }, // case-insensitive
   );
   if (exists)
     return NextResponse.json(
@@ -36,7 +51,15 @@ export async function POST(request) {
       { status: 409 },
     );
 
-  const doc = { name, type, createdAt: new Date() };
+  const doc = {
+    ...(wantedId ? { _id: wantedId } : {}),
+    name,
+    type,
+    createdAt: new Date(),
+  };
   const result = await categoryCollection.insertOne(doc);
   return NextResponse.json({ ...doc, _id: result.insertedId });
 }
+
+export const POST = (request) =>
+  withIdempotency(request, () => createCategory(request));

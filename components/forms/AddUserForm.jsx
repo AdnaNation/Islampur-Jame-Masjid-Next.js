@@ -95,7 +95,14 @@ const AddUser = () => {
     // send data to the server
     const addUser = await axiosPublic.post("/addUser", user);
     setLoading(false);
-    if (addUser.data.insertedId) {
+    if (addUser.data.queued) {
+      Swal.fire({
+        title: "সংরক্ষিত",
+        text: `${user.NameBn}-এর তথ্য অফলাইনে সংরক্ষিত — ইন্টারনেট এলে নিজে থেকেই অ্যাড হবে`,
+        icon: "info",
+        confirmButtonText: "Ok",
+      });
+    } else if (addUser.data.insertedId) {
       setLoading(false);
       Swal.fire({
         title: "Congrats!",
