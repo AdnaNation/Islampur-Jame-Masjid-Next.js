@@ -217,7 +217,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
     run(async () => {
       const res = await axiosPublic.patch(`/tarabeePaid/${u._id}`);
       if (res.data.queued || res.data.modifiedCount > 0) {
-        record({ fee: u.FeeRate, monthName, type: "Monthly" });
+        record({ fee: u.Tarabi?.fee, type: "Tarabi" });
         sms(
           `আপনি তারাবীর চাঁদা বাবদ ৳${u.Tarabi?.fee} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
         );
@@ -233,7 +233,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
         DueFee: Number(u.Due) - amt,
       });
       if (res.data.queued || res.data.modifiedCount > 0) {
-        record({ fee: u.FeeRate, monthName, type: "Monthly" });
+        record({ fee: amt, type: "Due" });
         sms(
           `আপনি আগের বছরের বকেয়া চাঁদা বাবদ ৳${amt} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
         );
