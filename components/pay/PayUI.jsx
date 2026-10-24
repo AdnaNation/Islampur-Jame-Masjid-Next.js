@@ -13,6 +13,7 @@ import { FaWhatsapp } from "react-icons/fa";
 import { BtnLoading, SectionLoader } from "@/components/Loader";
 import monthTranslation from "@/lib/monthTranslation";
 import { formatMonthRange } from "@/lib/monthRange";
+import PayHelpVideo from "@/components/pay/PayHelpVideo";
 
 /* ───────────── shared class names ───────────── */
 
@@ -106,6 +107,7 @@ export const PayShell = ({ stepNo = 0, children }) => (
       </header>
 
       {stepNo > 0 && <Stepper current={stepNo} />}
+      <PayHelpVideo />
 
       <div className="mt-6 space-y-4">{children}</div>
     </div>
