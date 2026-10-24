@@ -18,6 +18,7 @@ import { TbCoinTakaFilled } from "react-icons/tb";
 import useAdmin from "@/hooks/useAdmin";
 import { getLocalStorage, removeLocalStorage } from "@/lib/localStorage";
 import { clearApiCache } from "@/lib/pwa";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const LINKS = [
   { href: "/", label: "হোম", Icon: MdHome },
@@ -180,7 +181,10 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-2">
-          <div className="hidden lg:block">{authButton(false)}</div>
+          <div className="items-center hidden gap-2 lg:flex">
+            <InstallAppButton />
+            {authButton(false)}
+          </div>
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -211,6 +215,7 @@ const Navbar = () => {
             />
           ))}
           <div className="h-px my-2 bg-slate-100" />
+          <InstallAppButton variant="mobile" />
           {authButton(true)}
         </nav>
       </div>

@@ -5,6 +5,7 @@ import { sendSms } from "@/lib/sms";
 import { formatMonthRange } from "@/lib/monthRange";
 import { createPaySlip } from "@/lib/paySlip";
 import { actionTime, withIdempotency } from "@/lib/idempotency";
+import { isReplay, safeWhatsAppReceipt } from "@/lib/notify";
 
 async function sendConfirmationSms(number, message) {
   if (!number || number.length !== 11) return;
@@ -123,6 +124,14 @@ async function createCombinedPayment(request) {
   const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`;
 
   await sendConfirmationSms(user?.Number, smsMessage);
+
+  if (isReplay(request)) {
+    const total = [monthly, tarabi, due].reduce(
+      (sum, part) => sum + Number(part?.amount || 0),
+      0,
+    );
+    await safeWhatsAppReceipt({ to: user?.Number, totalAmount: total, slipId });
+  }
 
   return NextResponse.json({ success: true, slipId });
 }

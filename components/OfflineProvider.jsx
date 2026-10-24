@@ -18,6 +18,7 @@ import {
   subscribe,
 } from "@/lib/offlineQueue";
 import { registerServiceWorker, warmOfflineCache } from "@/lib/pwa";
+import useInstallApp from "@/hooks/useInstallApp";
 
 const bn = (n) => Number(n).toLocaleString("bn-BD");
 const timeText = (ms) =>
@@ -34,7 +35,7 @@ export default function OfflineProvider() {
   const [syncing, setSyncing] = useState(false);
   const [justSynced, setJustSynced] = useState(false);
   const [open, setOpen] = useState(false);
-  const [installEvt, setInstallEvt] = useState(null);
+  const { canPrompt, install } = useInstallApp();
   const [installHidden, setInstallHidden] = useState(true);
   const flushing = useRef(false);
 
@@ -120,33 +121,11 @@ export default function OfflineProvider() {
     if (online && !pending.length && !failed.length) setOpen(false);
   }, [online, pending.length, failed.length]);
 
-  // "install app" button
-  useEffect(() => {
-    const onPrompt = (e) => {
-      e.preventDefault();
-      setInstallEvt(e);
-    };
-    const onInstalled = () => setInstallEvt(null);
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    window.addEventListener("appinstalled", onInstalled);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
-  }, []);
-
-  const install = async () => {
-    if (!installEvt) return;
-    installEvt.prompt();
-    await installEvt.userChoice.catch(() => {});
-    setInstallEvt(null);
-  };
   const hideInstall = () => {
     localStorage.setItem("masjid-install-hidden", "1");
     setInstallHidden(true);
   };
-
-  const showInstall = !!installEvt && !installHidden;
+  const showInstall = canPrompt && !installHidden;
   if (
     online &&
     !pending.length &&
