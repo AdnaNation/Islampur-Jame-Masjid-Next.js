@@ -3,6 +3,8 @@ import { MdHistory, MdLocationOn, MdPayments } from "react-icons/md";
 import PrayerTimes from "@/components/PrayerTimes";
 import QuranSection from "@/components/QuranSection";
 import HeroSlider from "@/components/HeroSlider";
+import HeroNoticeLink from "@/components/HeroNoticeLink";
+import NoticeBoard from "@/components/NoticeBoard";
 export const metadata = {
   title: "ইসলামপুর জামে মসজিদ",
   robots: { index: false, follow: false },
@@ -54,6 +56,7 @@ export default function Home() {
                 <MdHistory className="text-lg" />
                 পেমেন্ট হিস্টোরি
               </Link>
+              <HeroNoticeLink />
             </div>
           </div>
 
@@ -65,6 +68,7 @@ export default function Home() {
 
       {/* Prayer times + Quran */}
       <div className="max-w-3xl px-4 py-8 mx-auto space-y-6">
+        <NoticeBoard />
         <PrayerTimes />
         <QuranSection />
       </div>

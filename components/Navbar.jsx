@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  MdCampaign,
   MdClose,
   MdDashboard,
   MdHistory,
@@ -25,6 +26,7 @@ const LINKS = [
   { href: "/fee", label: "চাঁদার তালিকা", Icon: TbCoinTakaFilled },
   { href: "/pay", label: "চাঁদা পরিশোধ", Icon: MdVolunteerActivism },
   { href: "/payment", label: "পেমেন্ট হিস্টোরি", Icon: MdHistory },
+  { href: "/notices", label: "নোটিশ", Icon: MdCampaign },
 ];
 const ADMIN_LINK = {
   href: "/dashboard/home",

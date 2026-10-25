@@ -1,24 +1,18 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import Letterhead, { LETTERHEAD } from "@/components/Letterhead";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Swal from "sweetalert2";
+import useAxiosPublic from "@/hooks/useAxiosPublic";
+import NoticeSheets from "@/components/NoticeSheets";
 import LedgerActions from "@/components/LedgerActions";
+import { BtnLoading } from "@/components/Loader";
 import { bn } from "@/lib/accountReport";
+import { getLocalStorage } from "@/lib/localStorage";
+import { noticeDate } from "@/lib/noticeFormat";
 
-// ---- edit here -------------------------------------------------------------
-const SIGN_SRC = "/president.jpg";
-const SIGNER_TITLE = "সভাপতি";
 const DRAFT_KEY = "notice-draft";
-// -----------------------------------------------------------------------------
-
-// A4 at 96dpi (1122px < 297mm, so the browser never adds a blank page)
-const PAGE_W = 793;
-const PAGE_H = 1122;
-const PAD_T = 40;
-const PAD_B = 40;
-const PAD_L = 56;
-const PAD_R = 57;
-const BODY_W = PAGE_W - PAD_L - PAD_R; // 680 – one text column = one page
 
 const field =
   "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#0f3d2e] focus:outline-none";
@@ -36,132 +30,21 @@ const emptyNotice = () => ({
   showSign: true,
 });
 
-function SignBlock() {
-  return (
-    <div
-      className="mt-10 text-right"
-      style={{ breakInside: "avoid", breakBefore: "avoid" }}
-    >
-      <div className="inline-block min-w-[200px] text-center">
-        <div className="flex items-end justify-center h-[72px]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={SIGN_SRC}
-            alt=""
-            width={92}
-            height={92}
-            className="object-contain "
-            onError={(e) => (e.currentTarget.style.visibility = "hidden")}
-          />
-        </div>
-        <div className="pt-1 border-t border-black">
-          <p className="text-[15px] font-bold leading-snug">লোকমান হোসেন</p>
-          <p className="text-[15px] font-bold leading-snug">{SIGNER_TITLE}</p>
-          <p className="text-[13px] font-semibold leading-snug">
-            {LETTERHEAD.name}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+const authHeaders = () => ({
+  Authorization: `Bearer ${getLocalStorage("access-token") || ""}`,
+});
 
-// Everything that flows across pages: title, subject, salutation, body, sign.
-function NoticeContent({ n }) {
-  return (
-    <div style={{ fontSize: 16, lineHeight: 1.9, color: "#000" }}>
-      {n.title && (
-        <h2
-          className="mb-3 text-center text-[22px] font-bold leading-tight"
-          style={{ breakAfter: "avoid" }}
-        >
-          <span className="pb-0.5 border-b-2 border-black">{n.title}</span>
-        </h2>
-      )}
-      {n.subject && (
-        <p
-          className="mb-4 font-bold leading-snug text-center"
-          style={{ breakAfter: "avoid" }}
-        >
-          বিষয়ঃ {n.subject}
-        </p>
-      )}
-      {n.salutation && (
-        <p className="mb-1 font-semibold" style={{ breakAfter: "avoid" }}>
-          {n.salutation}
-        </p>
-      )}
-      <div
-        style={{
-          whiteSpace: "pre-wrap",
-          textAlign: "justify",
-          overflowWrap: "anywhere",
-        }}
-      >
-        {n.body}
-      </div>
-      {n.showSign && <SignBlock />}
-    </div>
-  );
-}
-
-/**
- * One A4 sheet. The text lives in a multi-column box whose columns are exactly
- * one page wide; page `index` just slides that box left to show column `index`.
- * With `measure` the box is left unshifted so we can read how many columns
- * (= pages) the text needs.
- */
-function Sheet({ n, index = 0, total = 1, measure = false, boxRef }) {
-  return (
-    <section
-      data-ledger-page={measure ? undefined : ""}
-      data-name={`page-${index + 1}`}
-      className="relative flex flex-col overflow-hidden text-black bg-white"
-      style={{
-        width: PAGE_W,
-        height: PAGE_H,
-        padding: `${PAD_T}px ${PAD_R}px ${PAD_B}px ${PAD_L}px`,
-      }}
-    >
-      <Letterhead refNo={n.refNo} dateYmd={n.date} />
-
-      <div className="relative flex-1 min-h-0 overflow-hidden">
-        <div
-          ref={boxRef}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: BODY_W,
-            height: "100%",
-            columnWidth: BODY_W,
-            columnGap: 0,
-            columnFill: "auto",
-            overflow: measure ? "hidden" : "visible",
-            transform: measure ? undefined : `translateX(${-index * BODY_W}px)`,
-          }}
-        >
-          <NoticeContent n={n} />
-        </div>
-      </div>
-
-      {!measure && total > 1 && (
-        <p
-          className="absolute left-0 right-0 text-[11px] text-center text-slate-500"
-          style={{ bottom: 14 }}
-        >
-          পৃষ্ঠা {bn(index + 1)} / {bn(total)}
-        </p>
-      )}
-    </section>
-  );
-}
+const errText = (e) =>
+  e?.response?.data?.message || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন";
 
 export default function NoticePage() {
+  const axiosPublic = useAxiosPublic();
+  const qc = useQueryClient();
   const [n, setN] = useState(emptyNotice);
+  const [editingId, setEditingId] = useState(null); // set => "update", not "publish"
   const [pages, setPages] = useState(1);
   const [loaded, setLoaded] = useState(false);
-  const boxRef = useRef(null);
+  const [saving, setSaving] = useState(false);
 
   const set = (key) => (e) =>
     setN((p) => ({
@@ -169,11 +52,19 @@ export default function NoticePage() {
       [key]: e.target.type === "checkbox" ? e.target.checked : e.target.value,
     }));
 
+  const { data: published = [], isPending: listPending } = useQuery({
+    queryKey: ["notices", "admin"],
+    queryFn: async () => (await axiosPublic.get("/notices?limit=100")).data,
+  });
+
   // restore the last draft
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
-      if (saved) setN((p) => ({ ...p, ...saved }));
+      if (saved?.notice) {
+        setN((p) => ({ ...p, ...saved.notice }));
+        setEditingId(saved.editingId || null);
+      }
     } catch {}
     setLoaded(true);
   }, []);
@@ -182,45 +73,98 @@ export default function NoticePage() {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(n));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ notice: n, editingId }));
     } catch {}
-  }, [n, loaded]);
+  }, [n, editingId, loaded]);
 
-  // count pages: how many page-wide columns did the text need?
-  const measure = () => {
-    const el = boxRef.current;
-    if (!el) return;
-    setPages(Math.max(1, Math.ceil((el.scrollWidth - 2) / BODY_W)));
+  const reset = () => {
+    setN(emptyNotice());
+    setEditingId(null);
   };
-  useLayoutEffect(measure, [n]);
-  useEffect(() => {
-    const el = boxRef.current;
-    if (!el) return;
-    // re-measure when fonts / the logo finish loading and change heights
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    document.fonts?.ready.then(measure);
-    return () => ro.disconnect();
-  }, []);
 
   const clearAll = () => {
-    if (confirm("সব লেখা মুছে নতুন নোটিশ শুরু করবেন?")) setN(emptyNotice());
+    if (confirm("সব লেখা মুছে নতুন নোটিশ শুরু করবেন?")) reset();
   };
+
+  async function publish() {
+    if (!n.body.trim()) {
+      Swal.fire({ icon: "warning", text: "আগে নোটিশের লেখা লিখুন" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = editingId
+        ? await axiosPublic.patch(`/notices/${editingId}`, n, {
+            headers: authHeaders(),
+          })
+        : await axiosPublic.post("/notices", n, { headers: authHeaders() });
+      setEditingId(res.data._id);
+      qc.invalidateQueries({ queryKey: ["notices"] });
+      Swal.fire({
+        icon: "success",
+        text: editingId ? "নোটিশ আপডেট হয়েছে" : "নোটিশ বোর্ডে প্রকাশ হয়েছে",
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    } catch (e) {
+      Swal.fire({ icon: "error", text: errText(e) });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function edit(id) {
+    try {
+      const { data } = await axiosPublic.get(`/notices/${id}`);
+      setN({
+        refNo: data.refNo || "",
+        date: data.date,
+        title: data.title || "",
+        subject: data.subject || "",
+        salutation: data.salutation || "",
+        body: data.body || "",
+        showSign: data.showSign !== false,
+      });
+      setEditingId(id);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) {
+      Swal.fire({ icon: "error", text: errText(e) });
+    }
+  }
+
+  async function remove(item) {
+    const ok = await Swal.fire({
+      icon: "warning",
+      title: "নোটিশটি মুছবেন?",
+      text: item.title + (item.subject ? ` — ${item.subject}` : ""),
+      showCancelButton: true,
+      confirmButtonText: "হ্যাঁ, মুছুন",
+      cancelButtonText: "না",
+      confirmButtonColor: "#e11d48",
+    });
+    if (!ok.isConfirmed) return;
+    try {
+      await axiosPublic.delete(`/notices/${item._id}`, {
+        headers: authHeaders(),
+      });
+      if (editingId === item._id) setEditingId(null);
+      qc.invalidateQueries({ queryKey: ["notices"] });
+    } catch (e) {
+      Swal.fire({ icon: "error", text: errText(e) });
+    }
+  }
 
   return (
     <main className="p-4 print:p-0 print:bg-white">
-      <style>{`
-        @media print {
-          @page { size: A4 portrait; margin: 0; }
-          html, body { background: #fff !important; }
-          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-      `}</style>
-
       <div className="max-w-3xl mx-auto mb-6 space-y-3 print:hidden">
         <h1 className="text-lg font-bold text-center text-[#0f3d2e]">
           নোটিশ জেনারেটর
         </h1>
+        {editingId && (
+          <p className="px-3 py-2 text-sm text-center rounded-lg bg-amber-100 text-amber-900">
+            আপনি বোর্ডে প্রকাশিত একটি নোটিশ সম্পাদনা করছেন।
+          </p>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
@@ -248,6 +192,7 @@ export default function NoticePage() {
             <span className="block mb-1 text-xs text-slate-500">শিরোনাম</span>
             <input
               value={n.title}
+              maxLength={80}
               onChange={set("title")}
               placeholder="যেমন: নোটিশ / বিজ্ঞপ্তি"
               className={field}
@@ -259,6 +204,7 @@ export default function NoticePage() {
             </span>
             <input
               value={n.subject}
+              maxLength={150}
               onChange={set("subject")}
               placeholder="যেমন: জরুরি সভা প্রসঙ্গে"
               className={field}
@@ -272,6 +218,7 @@ export default function NoticePage() {
           </span>
           <input
             value={n.salutation}
+            maxLength={120}
             onChange={set("salutation")}
             placeholder="যেমন: সম্মানিত মুসল্লিয়ানে কেরাম,"
             className={field}
@@ -315,39 +262,91 @@ export default function NoticePage() {
           </div>
         </div>
 
+        <div className="flex flex-wrap justify-center gap-2 pt-1">
+          <button
+            type="button"
+            onClick={publish}
+            disabled={saving}
+            className="px-5 py-2 text-sm font-semibold text-white rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-60"
+          >
+            {saving ? (
+              <BtnLoading text="অপেক্ষা করুন" />
+            ) : editingId ? (
+              "বোর্ডে আপডেট করুন"
+            ) : (
+              "নোটিশ বোর্ডে প্রকাশ করুন"
+            )}
+          </button>
+        </div>
+
         <LedgerActions containerId="notice-sheet" fileName="notice" />
         <p className="text-xs text-center text-slate-500">
           PDF-এর জন্য “প্রিন্ট / PDF” চেপে “Save as PDF” ও “Portrait” বেছে নিন
           (Margins: None)। লেখা এই ব্রাউজারে স্বয়ংক্রিয়ভাবে সংরক্ষিত থাকে।
+          “প্রকাশ করুন” চাপলে নোটিশ ওয়েবসাইটের হোমপেজ ও নোটিশ বোর্ডে সবাই দেখতে
+          পাবে।
         </p>
       </div>
 
-      {/* the pages */}
-      <div id="notice-sheet" className="overflow-x-auto print:overflow-visible">
-        <div
-          className="mx-auto space-y-6 print:space-y-0"
-          style={{ width: PAGE_W }}
-        >
-          {Array.from({ length: pages }, (_, i) => (
-            <div
-              key={i}
-              className="shadow-md print:shadow-none print:break-after-page print:last:break-after-auto"
-              style={{ width: PAGE_W, height: PAGE_H }}
-            >
-              <Sheet n={n} index={i} total={pages} />
-            </div>
-          ))}
-        </div>
-      </div>
+      <NoticeSheets notice={n} onPageCount={setPages} />
 
-      {/* hidden copy used only to count pages */}
-      <div
-        aria-hidden="true"
-        className="absolute top-0 invisible pointer-events-none print:hidden"
-        style={{ left: -20000 }}
-      >
-        <Sheet n={n} measure boxRef={boxRef} />
-      </div>
+      {/* published notices */}
+      <section className="max-w-3xl mx-auto mt-10 print:hidden">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-[#0f3d2e]">প্রকাশিত নোটিশ</h2>
+          <Link href="/notices" className="text-sm text-[#0f3d2e] underline">
+            নোটিশ বোর্ড দেখুন →
+          </Link>
+        </div>
+        {listPending ? (
+          <p className="text-sm text-slate-500">লোড হচ্ছে…</p>
+        ) : published.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            এখনো কোনো নোটিশ প্রকাশ হয়নি।
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {published.map((p) => (
+              <li
+                key={p._id}
+                className={`flex items-center gap-3 p-3 bg-white border rounded-xl ${
+                  p._id === editingId
+                    ? "border-amber-400 ring-1 ring-amber-300"
+                    : "border-slate-200"
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{p.title}</p>
+                  <p className="text-xs truncate text-slate-500">
+                    {noticeDate(p.date)}
+                    {p.subject ? ` · ${p.subject}` : ""}
+                  </p>
+                </div>
+                <Link
+                  href={`/notices/${p._id}`}
+                  className="text-sm underline text-slate-600"
+                >
+                  দেখুন
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => edit(p._id)}
+                  className="text-sm text-[#0f3d2e] underline"
+                >
+                  সম্পাদনা
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(p)}
+                  className="text-sm underline text-rose-600"
+                >
+                  মুছুন
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }

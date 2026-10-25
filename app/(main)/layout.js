@@ -6,7 +6,9 @@ export default function MainLayout({ children }) {
     <div>
       <Navbar />
       <div className="min-h-screen">{children}</div>
-      <Footer />
+      <div className="print:hidden">
+        <Footer />
+      </div>
     </div>
   );
 }
