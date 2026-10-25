@@ -5,7 +5,8 @@ import Letterhead, { LETTERHEAD } from "@/components/Letterhead";
 import { bn } from "@/lib/accountReport";
 
 // ---- edit here -------------------------------------------------------------
-const SIGN_SRC = "/president.jpg"; // president's signature image (in /public)
+const SIGN_SRC = "/president.jpg";
+const SIGNER_NAME = "লোকমান হোসেন";
 const SIGNER_TITLE = "সভাপতি";
 // -----------------------------------------------------------------------------
 
@@ -35,6 +36,7 @@ function SignBlock() {
           />
         </div>
         <div className="pt-1 border-t border-black">
+          <p className="text-[15px] font-bold leading-snug">{SIGNER_NAME}</p>
           <p className="text-[15px] font-bold leading-snug">{SIGNER_TITLE}</p>
           <p className="text-[13px] font-semibold leading-snug">
             {LETTERHEAD.name}
