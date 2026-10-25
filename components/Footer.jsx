@@ -59,7 +59,7 @@ const Footer = () => {
               চাঁদা পরিশোধ
             </Link>
             <Link href="/payment" className="text-amber-300 hover:underline">
-              পেমেন্ট হিস্টোরি
+              পেমেন্ট হিস্ট্রি
             </Link>
           </div>
         </div>

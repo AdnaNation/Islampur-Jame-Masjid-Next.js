@@ -41,7 +41,7 @@ const MENU = [
     items: [
       { href: "/dashboard/messages", label: "ম্যাসেজ প্যানেল", Icon: MdSms },
       { href: "/dashboard/inbox", label: "হোয়াটসঅ্যাপ ইনবক্স", Icon: MdForum },
-      { href: "/dashboard/link-visits", label: "লিংক হিস্টোরি", Icon: MdLink },
+      { href: "/dashboard/link-visits", label: "লিংক হিস্ট্রি", Icon: MdLink },
       { href: "/dashboard/notice", label: "নোটিশ জেনারেটর", Icon: MdCampaign },
     ],
   },

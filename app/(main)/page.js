@@ -54,7 +54,7 @@ export default function Home() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white border rounded-full border-white/40 hover:bg-white/10"
               >
                 <MdHistory className="text-lg" />
-                পেমেন্ট হিস্টোরি
+                পেমেন্ট হিস্ট্রি
               </Link>
               <HeroNoticeLink />
             </div>

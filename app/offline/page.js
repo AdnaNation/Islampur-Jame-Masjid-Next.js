@@ -3,7 +3,7 @@ export const metadata = { title: "ইন্টারনেট নেই" };
 const links = [
   ["/", "হোম"],
   ["/fee", "চাঁদার তালিকা"],
-  ["/payment", "পেমেন্ট হিস্টোরি"],
+  ["/payment", "পেমেন্ট হিস্ট্রি"],
   ["/dashboard/accounts", "আয়-ব্যয়ের হিসাব"],
 ];
 

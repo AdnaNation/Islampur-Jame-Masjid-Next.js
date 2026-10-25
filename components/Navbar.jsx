@@ -25,7 +25,7 @@ const LINKS = [
   { href: "/", label: "হোম", Icon: MdHome },
   { href: "/fee", label: "চাঁদার তালিকা", Icon: TbCoinTakaFilled },
   { href: "/pay", label: "চাঁদা পরিশোধ", Icon: MdVolunteerActivism },
-  { href: "/payment", label: "পেমেন্ট হিস্টোরি", Icon: MdHistory },
+  { href: "/payment", label: "পেমেন্ট হিস্ট্রি", Icon: MdHistory },
   { href: "/notices", label: "নোটিশ", Icon: MdCampaign },
 ];
 const ADMIN_LINK = {

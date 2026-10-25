@@ -17,7 +17,7 @@ const LinkVisitsPage = () => {
 
   return (
     <div className="max-w-2xl min-h-screen p-4 mx-auto">
-      <h1 className="mb-4 text-xl font-bold">পেমেন্ট লিংক ভিজিট হিস্টোরি</h1>
+      <h1 className="mb-4 text-xl font-bold">পেমেন্ট লিংক ভিজিট হিস্ট্রি</h1>
 
       {isPending && <CardListSkeleton />}
       {!isPending && visits.length === 0 && (

@@ -221,7 +221,7 @@ const PaymentHistory = () => {
       <div className="bg-gradient-to-b from-[#0f3d2e] to-[#14523d] px-4 pt-8 pb-16 text-center text-white">
         <MdHistory className="mx-auto mb-1 text-3xl text-amber-300" />
         <h1 className="text-2xl font-bold">
-          {tab === "reverted" ? "বাতিলকৃত পেমেন্ট" : "পেমেন্ট হিস্টোরি"}
+          {tab === "reverted" ? "বাতিলকৃত পেমেন্ট" : "পেমেন্ট হিস্ট্রি"}
         </h1>
         <p className="mt-1 text-sm text-white/70">
           ইসলামপুর জামে মসজিদের চাঁদা পরিশোধের তালিকা
@@ -230,7 +230,7 @@ const PaymentHistory = () => {
         {isAdmin && (
           <div className="inline-flex p-1 mt-4 rounded-full bg-white/10">
             {[
-              ["active", "পেমেন্ট হিস্টোরি"],
+              ["active", "পেমেন্ট হিস্ট্রি"],
               ["reverted", "বাতিলকৃত পেমেন্ট"],
             ].map(([key, label]) => (
               <button
@@ -376,7 +376,7 @@ const PaymentHistory = () => {
             <p className="mt-2 text-sm font-medium text-rose-700">
               {tab === "reverted"
                 ? "কোনো বাতিলকৃত পেমেন্ট নেই!"
-                : `${name.trim() ? name + "'র" : "এই বাড়ির"} কোনো পেমেন্ট হিস্টোরি নেই!`}
+                : `${name.trim() ? name + "'র" : "এই বাড়ির"} কোনো পেমেন্ট হিস্ট্রি নেই!`}
             </p>
           </div>
         )}
