@@ -121,7 +121,8 @@ async function createCombinedPayment(request) {
     method: "cash",
   });
 
-  const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`;
+  const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ।
+  islampurjamemasjid.org/pay-slip/${slipId}`;
 
   await sendConfirmationSms(user?.Number, smsMessage);
 

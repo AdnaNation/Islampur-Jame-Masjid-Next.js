@@ -63,9 +63,9 @@ export default function Letterhead({ refNo = "", dateYmd = "" }) {
             <img
               src={logoSrc}
               alt=""
-              width={92}
+              width={95}
               height={92}
-              className="object-contain"
+              className="object-contain rounded-full"
             />
           ) : (
             <MosqueMark color={color} />

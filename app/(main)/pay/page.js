@@ -187,7 +187,7 @@ const PaymentPage = () => {
     if (!trxID.trim() || !senderNumber.trim()) return;
     setSubmitting(true);
     try {
-      await axiosPublic.post("/bkash-request", {
+      await axiosPublic.post("/pay-request", {
         userId: user._id,
         name: user.NameBn,
         home: user.HomeName,

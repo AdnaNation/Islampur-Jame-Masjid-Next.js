@@ -16,6 +16,7 @@ export default function Home() {
       alt: "মসজিদের ভেতরের দৃশ্য",
     },
     { src: "/mosque-3.jpg", alt: "মসজিদের সামনের অংশ" },
+    { src: "/mosque-4.jpg", alt: "মসজিদের সামনের অংশ" },
   ];
   return (
     <div className="bg-[#f7f5ef]">

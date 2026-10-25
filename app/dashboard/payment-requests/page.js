@@ -22,9 +22,9 @@ const PaymentRequestsPage = () => {
     isPending,
     refetch,
   } = useQuery({
-    queryKey: ["bkash-requests", tab],
+    queryKey: ["pay-requests", tab],
     queryFn: async () => {
-      const res = await axiosPublic.get(`/bkash-request?status=${tab}`);
+      const res = await axiosPublic.get(`/pay-request?status=${tab}`);
       return res.data;
     },
   });
@@ -53,7 +53,7 @@ const PaymentRequestsPage = () => {
     setBusyId(claim._id);
     try {
       await axiosPublic
-        .patch(`/bkash-request/${claim._id}/approve`)
+        .patch(`/pay-request/${claim._id}/approve`)
         .then((res) => {
           if (res?.data?.smsNumber && res?.data?.slipId) {
             axiosPublic.post("/whatsapp/payment", {
@@ -95,7 +95,7 @@ const PaymentRequestsPage = () => {
 
     setBusyId(claim._id);
     try {
-      await axiosPublic.patch(`/bkash-request/${claim._id}/reject`);
+      await axiosPublic.patch(`/pay-request/${claim._id}/reject`);
       refetch();
     } catch {
       Swal.fire({ icon: "error", title: "ব্যর্থ হয়েছে" });

@@ -147,8 +147,8 @@ export async function PATCH(request, { params }) {
     trxID: claim.trxID,
   });
 
-  const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন।
--ইসলামপুর জামে মসজিদ`;
+  const smsMessage = `আপনি ${joinedParts} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ।
+  islampurjamemasjid.org/pay-slip/${slipId}`;
 
   await sendConfirmationSms(smsNumber, smsMessage);
 
