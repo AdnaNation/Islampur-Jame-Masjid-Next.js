@@ -6,8 +6,31 @@ import HeroSlider from "@/components/HeroSlider";
 import HeroNoticeLink from "@/components/HeroNoticeLink";
 import NoticeBoard from "@/components/NoticeBoard";
 export const metadata = {
-  title: "ইসলামপুর জামে মসজিদ",
-  robots: { index: false, follow: false },
+  title: {
+    absolute:
+      "ইসলামপুর জামে মসজিদ, দুধমুখা, দাগনভূঞা, ফেনী | নামাজের সময়সূচি ও নোটিশ",
+  },
+  description:
+    "ইসলামপুর জামে মসজিদ (স্থাপিত ১৯৪০), দুধমুখা বাজার, দাগনভূঞা, ফেনী। আজকের নামাজের সময়সূচি, নোটিশ বোর্ড ও অনলাইনে চাঁদা পরিশোধ।",
+  alternates: { canonical: "/" },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Mosque",
+  name: "ইসলামপুর জামে মসজিদ",
+  alternateName: "Islampur Jame Masjid",
+  url: "https://www.islampurjamemasjid.org",
+  image: "https://www.islampurjamemasjid.org/mosque.jpg",
+  foundingDate: "1940",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "দুধমুখা বাজার",
+    addressLocality: "দাগনভূঞা",
+    addressRegion: "ফেনী",
+    addressCountry: "BD",
+  },
+  geo: { "@type": "GeoCoordinates", latitude: 22.893773, longitude: 91.260654 },
 };
 
 export default function Home() {
@@ -22,6 +45,10 @@ export default function Home() {
   ];
   return (
     <div className="bg-[#f7f5ef]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Hero */}
       <section className="bg-gradient-to-b from-[#0f3d2e] to-[#14523d] text-white">
         <div className="grid items-center max-w-5xl gap-8 px-4 py-10 mx-auto md:grid-cols-2 md:py-14">
@@ -37,8 +64,9 @@ export default function Home() {
               দুধমুখা বাজার, দাগনভূঞা, ফেনী
             </p>
             <p className="mt-3 text-sm leading-relaxed text-white/75">
-              ফেনির দাগনভূঞা উপজেলার দুধমুখা বাজারের অদূরে, ইসলামপুর সমাজের
-              কেন্দ্রে অবস্থিত।
+              ইসলামপুর জামে মসজিদ ১৯৪০ সালে প্রতিষ্ঠিত। ফেনীর দাগনভূঞা উপজেলার
+              দুধমুখা বাজারের অদূরে ইসলামপুর সমাজের কেন্দ্রে অবস্থিত এই মসজিদে
+              পাঁচ ওয়াক্ত নামাজ, জুমআ ও তারাবীহ জামাআতের সাথে আদায় করা হয়।
             </p>
 
             <div className="flex flex-wrap justify-center gap-3 mt-6 md:justify-start">
@@ -66,7 +94,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Prayer times + Quran */}
       <div className="max-w-3xl px-4 py-8 mx-auto space-y-6">
         <NoticeBoard />
         <PrayerTimes />
