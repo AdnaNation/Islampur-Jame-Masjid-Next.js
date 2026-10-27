@@ -1,28 +1,8 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { ObjectId } from "mongodb";
 import { getCollections } from "@/lib/mongodb";
 
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const FB_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
-
-const safeEq = (a, b) => {
-  const x = Buffer.from(String(a));
-  const y = Buffer.from(String(b));
-  return x.length === y.length && timingSafeEqual(x, y);
-};
-
-function validSignature(rawBody, header) {
-  const secrets = String(process.env.META_APP_SECRET || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (!secrets.length || !header) return false; // not configured -> reject (fail closed)
-  return secrets.some((secret) => {
-    const expected =
-      "sha256=" + createHmac("sha256", secret).update(rawBody).digest("hex");
-    return safeEq(expected, header);
-  });
-}
 
 const GREETING = `আসসালামু আলাইকুম।\n\n🕌 *ইসলামপুর জামে মসজিদ* সেবায় আপনাকে স্বাগতম।\n\nসহজে তথ্য পেতে নিচের নম্বর বা কিওয়ার্ডগুলো লিখে মেসেজ দিন:\n\n1️⃣ *Due* (বা ১) - বকেয়া জানতে\n2️⃣ *Contact* (বা ২) - কমিটির সাথে যোগাযোগ\n3️⃣ *Namaz* (বা ৩) - নামাজের সময়সূচি\n\n_যেকোনো সময় প্রধান মেনুতে ফিরতে *Menu* বা *0* লিখুন।_`;
 
