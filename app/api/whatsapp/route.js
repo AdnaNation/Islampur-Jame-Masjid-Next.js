@@ -1,6 +1,6 @@
 import { getCollections } from "@/lib/mongodb";
 import { requireAdmin } from "@/lib/auth";
-import { isPhone, str } from "@/lib/validate";
+import { isContactNumber, str } from "@/lib/validate";
 
 export async function POST(req) {
   const denied = await requireAdmin(req);
@@ -10,7 +10,7 @@ export async function POST(req) {
   const to = b?.to;
   const due_month = str(b?.due_month, 40);
   const due_amount = str(b?.due_amount, 20);
-  if (!isPhone(to) || !due_month || !due_amount)
+  if (!isContactNumber(to) || !due_month || !due_amount)
     return Response.json({ error: "to required" }, { status: 400 });
 
   let finalTo = String(to).trim();

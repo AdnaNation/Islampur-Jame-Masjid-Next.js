@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
 import { requireAdmin } from "@/lib/auth";
 import { rateLimit } from "@/lib/rateLimit";
-import { bad, isPhone } from "@/lib/validate";
+import { bad, isContactNumber } from "@/lib/validate";
 
 // PUBLIC: records that someone opened their personal pay link.
 export async function POST(request) {
@@ -15,7 +15,7 @@ export async function POST(request) {
 
   const body = await request.json().catch(() => null);
   const number = body?.number;
-  if (!isPhone(number)) return bad("number is required");
+  if (!isContactNumber(number)) return bad("number is required");
 
   const { linkVisitCollection, userCollection } = await getCollections();
   const now = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });

@@ -153,7 +153,7 @@ const Navbar = () => {
       ref={headerRef}
       className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur print:hidden"
     >
-      <div className="flex items-center justify-between h-16 max-w-6xl gap-3 px-3 mx-auto sm:px-4">
+      <div className="flex items-center justify-between h-16 max-w-7xl gap-3 px-3 mx-auto sm:px-4">
         {/* brand */}
         <Link href="/" className="flex items-center min-w-0 gap-2.5">
           <Image

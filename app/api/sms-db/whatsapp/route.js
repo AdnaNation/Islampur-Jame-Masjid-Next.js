@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
 import { requireAdmin } from "@/lib/auth";
-import { bad, isPhone, str } from "@/lib/validate";
+import { bad, isContactNumber, str } from "@/lib/validate";
 
 // remembers "this number was already messaged this month"
 export async function POST(request) {
@@ -11,7 +11,7 @@ export async function POST(request) {
   const b = await request.json().catch(() => null);
   const number = b?.number;
   const lastSendingMonth = str(b?.lastSendingMonth, 20);
-  if (!isPhone(number) || !lastSendingMonth) return bad();
+  if (!isContactNumber(number) || !lastSendingMonth) return bad();
   const body = {
     number,
     lastSendingMonth,

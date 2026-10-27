@@ -278,8 +278,9 @@ const PaymentPage = () => {
         <>
           <MemberCard user={user} onChange={resetToLookup} />
           <SmsNotice
-            hasNumber={!!user.Number}
-            masked={maskNumber(user.Number)}
+            hasNumber={user.hasNumber ?? !!user.Number}
+            masked={user.maskedNumber || maskNumber(user.Number)}
+            viaSms={user.smsCapable ?? /^\d{11}$/.test(user.Number || "")}
           />
           <DuesSelector
             user={user}

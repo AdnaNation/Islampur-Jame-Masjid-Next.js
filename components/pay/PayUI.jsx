@@ -224,7 +224,7 @@ export const MemberCard = ({ user, onChange }) => (
   </Card>
 );
 
-export const SmsNotice = ({ hasNumber, masked }) => (
+export const SmsNotice = ({ hasNumber, masked, viaSms = true }) => (
   <div
     className={`flex items-start gap-2 rounded-lg border p-3 text-xs leading-relaxed ${
       hasNumber
@@ -235,7 +235,9 @@ export const SmsNotice = ({ hasNumber, masked }) => (
     <FiInfo className="mt-0.5 shrink-0 text-base" />
     <p>
       {hasNumber
-        ? `পেমেন্ট রিসিভ হলে আপনার ${masked} নাম্বারে SMS পাঠানো হবে।`
+        ? `পেমেন্ট রিসিভ হলে আপনার ${masked} নাম্বারে ${
+            viaSms ? "SMS" : "WhatsApp-এ মেসেজ"
+          } পাঠানো হবে।`
         : "আমাদের সার্ভারে আপনার নাম্বার নেই। মাসিক আপডেট পেতে দয়া করে আপনার নাম্বারটি আমাদের হোয়াটসঅ্যাপে প্রদান করবেন।"}
     </p>
   </div>
