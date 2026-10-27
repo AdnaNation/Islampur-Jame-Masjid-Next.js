@@ -119,16 +119,16 @@ const Navbar = () => {
     try {
       await axiosPublic.post("/auth/logout"); // server deletes the session cookie
     } catch {}
-    clearApiCache(); // saved offline copies of admin data
-    qc.clear(); // everything fetched while signed in
+    clearApiCache();
+    qc.clear();
     setOpen(false);
-    router.push("/signin");
+    router.push("/");
   };
 
   const links = isAdmin ? [...LINKS, ADMIN_LINK] : LINKS;
 
   const authButton = (full) =>
-    userNumber ? (
+    userNumber && (
       <button
         onClick={logout}
         className={`flex items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 ${
@@ -137,15 +137,6 @@ const Navbar = () => {
       >
         <MdLogout className="text-lg" /> লগআউট
       </button>
-    ) : (
-      <Link
-        href="/signin"
-        className={`flex items-center justify-center gap-2 rounded-full bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#14523d] ${
-          full ? "w-full" : ""
-        }`}
-      >
-        <MdLogin className="text-lg" /> লগইন
-      </Link>
     );
 
   return (
