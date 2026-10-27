@@ -6,6 +6,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
+  "media-src 'self' https://*.mp3quran.net",
   "connect-src 'self'",
   "worker-src 'self'",
   "manifest-src 'self'",
