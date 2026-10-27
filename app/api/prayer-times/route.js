@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
+import { requireStaff } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,6 @@ const SCHOOL = 1;
 const MANUAL_KEYS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jummah"];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/; // 24-hour HH:mm
 const DOC_ID = "prayer-times";
-
-async function getAdminUser(request) {
-  return null;
-}
 
 async function fetchAladhan() {
   const dateStr = new Date()
@@ -68,7 +65,10 @@ export async function GET() {
   }
 }
 
+// admin or moderator only (this used to be open to everyone)
 export async function PUT(request) {
+  const denied = await requireStaff(request);
+  if (denied) return denied;
   const body = await request.json().catch(() => null);
   const input = body?.timings;
   if (!input || typeof input !== "object") {

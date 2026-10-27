@@ -2,44 +2,43 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
+import { ME_KEY } from "@/hooks/useSession";
 import { useState } from "react";
-import { setLocalStorage, removeLocalStorage } from "@/lib/localStorage";
 
 const AdminSignIn = () => {
   const axiosPublic = useAxiosPublic();
+  const qc = useQueryClient();
   const [alert, setAlert] = useState(" ");
+  const [busy, setBusy] = useState(false);
   const router = useRouter();
-  const handleSignIn = async (e) => {
-    setAlert(" ");
-    e.preventDefault();
-    const form = e.target;
-    const number = form.number.value;
-    const password = form.password.value;
 
-    const signedData = await axiosPublic(`admin/${number}`);
-    if (signedData.data.number) {
-      if (
-        signedData.data.number === number &&
-        signedData.data.password === password
-      ) {
-        setLocalStorage("Number", number);
-        const userInfo = { number: number };
-        axiosPublic.post("/jwt", userInfo).then((res) => {
-          if (res.data.token) {
-            setLocalStorage("access-token", res.data.token);
-          }
-        });
-        setAlert(" ");
-        router.push("/");
-      } else {
-        removeLocalStorage("access-token");
-        setAlert("কিছু একটা ভুল আছে");
-      }
-    } else {
-      setAlert("কিছু একটা ভুল আছে");
+  // The server checks the number + PIN and sets a secure cookie.
+  // The PIN never comes back to the browser, and nothing sensitive is kept in localStorage.
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+    setAlert(" ");
+    setBusy(true);
+    const form = e.target;
+    try {
+      await axiosPublic.post("/auth/login", {
+        number: form.number.value.trim(),
+        password: form.password.value,
+      });
+      await qc.invalidateQueries({ queryKey: ME_KEY });
+      router.push("/");
+    } catch (err) {
+      setAlert(
+        err?.response?.status === 429
+          ? "অনেকবার ভুল হয়েছে, একটু পরে চেষ্টা করুন"
+          : "কিছু একটা ভুল আছে",
+      );
+    } finally {
+      setBusy(false);
     }
   };
+
   return (
     <form
       onSubmit={handleSignIn}
@@ -52,6 +51,8 @@ const AdminSignIn = () => {
         <input
           name="number"
           type="text"
+          inputMode="numeric"
+          autoComplete="username"
           placeholder="আপনার নাম্বার"
           className="w-full input input-bordered"
         />
@@ -60,7 +61,8 @@ const AdminSignIn = () => {
         </div>
         <input
           name="password"
-          type="text"
+          type="password"
+          autoComplete="current-password"
           placeholder="আপনার পিন"
           className="w-full input input-bordered"
         />
@@ -74,7 +76,11 @@ const AdminSignIn = () => {
         </div>
       </label>
       <div className="text-center">
-        <button className="btn btn-outline btn-info" type="submit">
+        <button
+          className="btn btn-outline btn-info"
+          type="submit"
+          disabled={busy}
+        >
           প্রবেশ করুন
         </button>
       </div>

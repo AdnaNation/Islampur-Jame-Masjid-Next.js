@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getAccountCollections, cleanName } from "@/lib/accounts";
+import { requireAdmin } from "@/lib/auth";
 
 export async function PATCH(request, { params }) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const { id } = await params;
   if (!ObjectId.isValid(id))
     return NextResponse.json({ message: "ভুল আইডি" }, { status: 400 });
@@ -44,6 +47,8 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const { id } = await params;
   if (!ObjectId.isValid(id))
     return NextResponse.json({ message: "ভুল আইডি" }, { status: 400 });

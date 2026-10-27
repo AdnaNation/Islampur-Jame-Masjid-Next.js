@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const url = `https://api.mimsms.com/api/SmsSending/balanceCheck?userName=${process.env.API_USERNAME}&Apikey=${process.env.API_KEY}`;
   const response = await fetch(url);
   const data = await response.json();

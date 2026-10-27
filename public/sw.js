@@ -1,4 +1,4 @@
-const VERSION = "v1";
+const VERSION = "v2";
 const PAGES = `masjid-pages-${VERSION}`;
 const STATIC = `masjid-static-${VERSION}`;
 const ASSETS = `masjid-assets-${VERSION}`;
@@ -28,7 +28,13 @@ const PRECACHE = [
 ];
 
 // data that must never be kept
-const API_SKIP = ["/api/jwt", "/api/health", "/api/whatsapp", "/api/sms-db"];
+const API_SKIP = [
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/health",
+  "/api/whatsapp",
+  "/api/sms-db",
+];
 const API_MAX_ENTRIES = 300;
 
 // ---- helpers ---------------------------------------------------------------
@@ -57,6 +63,8 @@ async function networkFirst(request, cacheName, ms) {
   const key = keyFor(new URL(request.url));
   const net = fetch(request).then((res) => {
     if (okRes(res)) cache.put(key, res.clone()).catch(() => {});
+    else if (cacheName === API && (res.status === 401 || res.status === 403))
+      caches.delete(API).catch(() => {});
     return res;
   });
   net.catch(() => {}); // no "unhandled rejection" noise when the saved copy won

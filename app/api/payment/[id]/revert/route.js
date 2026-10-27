@@ -3,6 +3,8 @@ import { ObjectId } from "mongodb";
 import { getCollections } from "@/lib/mongodb";
 import { sendSms } from "@/lib/sms";
 import { parseMonthRange } from "@/lib/monthRange";
+import { requireAdmin } from "@/lib/auth";
+import { bad, isId } from "@/lib/validate";
 
 const REVERT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -16,7 +18,10 @@ async function sendRevertSms(number, message) {
 }
 
 export async function PATCH(request, { params }) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const { id } = await params;
+  if (!isId(id)) return bad("ভুল আইডি");
   const { userCollection, paymentCollection, paySlipCollection } =
     await getCollections();
 

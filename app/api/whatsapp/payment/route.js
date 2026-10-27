@@ -1,11 +1,21 @@
 import { sendWhatsAppReceipt } from "@/lib/notify";
+import { requireAdmin } from "@/lib/auth";
+import { SLIP_ID_PATTERN } from "@/lib/paySlip";
+import { isPhone, money } from "@/lib/validate";
 
 export async function POST(req) {
-  const { to, total_amount, slipId } = await req.json();
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
+
+  const b = await req.json().catch(() => null);
+  const amount = money(b?.total_amount);
+  if (!isPhone(b?.to) || !SLIP_ID_PATTERN.test(String(b?.slipId)) || !amount)
+    return Response.json({ error: "invalid request" }, { status: 400 });
+
   const result = await sendWhatsAppReceipt({
-    to,
-    totalAmount: total_amount,
-    slipId,
+    to: b.to,
+    totalAmount: amount,
+    slipId: b.slipId,
   });
   return Response.json(result, { status: 200 });
 }

@@ -3,6 +3,8 @@ import { ObjectId } from "mongodb";
 import { getCollections } from "@/lib/mongodb";
 import { sendSms } from "@/lib/sms";
 import { createPaySlip } from "@/lib/paySlip";
+import { requireAdmin } from "@/lib/auth";
+import { bad, isId } from "@/lib/validate";
 
 const METHOD_LABELS = { bkash: "bKash", nagad: "Nagad", bank: "Bank" };
 
@@ -16,7 +18,10 @@ async function sendConfirmationSms(number, message) {
 }
 
 export async function PATCH(request, { params }) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const { id } = await params;
+  if (!isId(id)) return bad("ভুল আইডি");
   const { userCollection, paymentCollection, bkashRequestCollection } =
     await getCollections();
 

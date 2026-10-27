@@ -63,7 +63,6 @@ function LedgerView() {
   } = useQuery({
     queryKey: ["ledger", year, home],
     queryFn: async () => {
-      const token = getLocalStorage("access-token");
       const res = await axiosPublic.get("/ledger", {
         params: { year, ...(home ? { home } : {}) },
       });

@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { getAccountCollections, getAccountSettings } from "@/lib/accounts";
 import { YMD } from "@/lib/accountReport";
+import { requireAdmin } from "@/lib/auth";
 
 // GET -> { startDate: "yyyy-mm-dd" | "", openingFund: number }
-export async function GET() {
+export async function GET(request) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   return NextResponse.json(await getAccountSettings());
 }
 
 // PUT { startDate, openingFund } -> save (replaces the old values)
 export async function PUT(request) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const body = await request.json();
   const startDate = String(body.startDate ?? "").trim();
   const fund = Math.round(Number(body.openingFund) * 100) / 100;

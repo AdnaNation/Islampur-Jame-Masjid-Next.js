@@ -9,7 +9,6 @@ import NoticeSheets from "@/components/NoticeSheets";
 import LedgerActions from "@/components/LedgerActions";
 import { BtnLoading } from "@/components/Loader";
 import { bn } from "@/lib/accountReport";
-import { getLocalStorage } from "@/lib/localStorage";
 import { noticeDate } from "@/lib/noticeFormat";
 
 const DRAFT_KEY = "notice-draft";
@@ -28,10 +27,6 @@ const emptyNotice = () => ({
   salutation: "",
   body: "",
   showSign: true,
-});
-
-const authHeaders = () => ({
-  Authorization: `Bearer ${getLocalStorage("access-token") || ""}`,
 });
 
 const errText = (e) =>
@@ -94,10 +89,8 @@ export default function NoticePage() {
     setSaving(true);
     try {
       const res = editingId
-        ? await axiosPublic.patch(`/notices/${editingId}`, n, {
-            headers: authHeaders(),
-          })
-        : await axiosPublic.post("/notices", n, { headers: authHeaders() });
+        ? await axiosPublic.patch(`/notices/${editingId}`, n)
+        : await axiosPublic.post("/notices", n);
       setEditingId(res.data._id);
       qc.invalidateQueries({ queryKey: ["notices"] });
       Swal.fire({
@@ -144,9 +137,7 @@ export default function NoticePage() {
     });
     if (!ok.isConfirmed) return;
     try {
-      await axiosPublic.delete(`/notices/${item._id}`, {
-        headers: authHeaders(),
-      });
+      await axiosPublic.delete(`/notices/${item._id}`);
       if (editingId === item._id) setEditingId(null);
       qc.invalidateQueries({ queryKey: ["notices"] });
     } catch (e) {

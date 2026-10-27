@@ -8,10 +8,13 @@ import {
   mergeMemberRow,
   openingAt,
 } from "@/lib/accounts";
+import { requireAdmin } from "@/lib/auth";
 
 const r2 = (n) => Math.round(n * 100) / 100;
 
 export async function GET(request) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const sp = new URL(request.url).searchParams;
   const from = dhakaStart(sp.get("from"));
   const to = dhakaEnd(sp.get("to"));

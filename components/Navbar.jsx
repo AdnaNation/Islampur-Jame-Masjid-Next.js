@@ -16,8 +16,10 @@ import {
   MdVolunteerActivism,
 } from "react-icons/md";
 import { TbCoinTakaFilled } from "react-icons/tb";
+import { useQueryClient } from "@tanstack/react-query";
 import useAdmin from "@/hooks/useAdmin";
-import { getLocalStorage, removeLocalStorage } from "@/lib/localStorage";
+import useSession from "@/hooks/useSession";
+import useAxiosPublic from "@/hooks/useAxiosPublic";
 import { clearApiCache } from "@/lib/pwa";
 import InstallAppButton from "@/components/InstallAppButton";
 
@@ -83,13 +85,15 @@ function MobileLink({ href, label, Icon, active }) {
 const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const [userNumber, setUserNumber] = useState(null);
+  const axiosPublic = useAxiosPublic();
+  const qc = useQueryClient();
+  const { me } = useSession();
+  const userNumber = me?.signedIn ? me.number : null;
   const [isAdmin] = useAdmin();
   const [open, setOpen] = useState(false);
   const headerRef = useRef(null);
 
   useEffect(() => {
-    setUserNumber(getLocalStorage("Number"));
     setOpen(false);
   }, [pathname]);
 
@@ -111,10 +115,12 @@ const Navbar = () => {
     };
   }, [open]);
 
-  const logout = () => {
-    removeLocalStorage("Number");
-    clearApiCache();
-    setUserNumber(null);
+  const logout = async () => {
+    try {
+      await axiosPublic.post("/auth/logout"); // server deletes the session cookie
+    } catch {}
+    clearApiCache(); // saved offline copies of admin data
+    qc.clear(); // everything fetched while signed in
     setOpen(false);
     router.push("/signin");
   };

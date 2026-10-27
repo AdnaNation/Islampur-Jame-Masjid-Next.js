@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { withIdempotency } from "@/lib/idempotency";
 import { getAccountCollections, TYPES, cleanName } from "@/lib/accounts";
+import { requireAdmin } from "@/lib/auth";
 
 const byBn = (a, b) => (a || "").localeCompare(b || "", "bn");
 
 // GET -> all categories (income first, then expense; A-Z within each)
-export async function GET() {
+export async function GET(request) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const { categoryCollection } = await getAccountCollections();
   const list = await categoryCollection.find({}).toArray();
   list.sort((a, b) =>
@@ -61,5 +64,9 @@ async function createCategory(request) {
   return NextResponse.json({ ...doc, _id: result.insertedId });
 }
 
-export const POST = (request) =>
-  withIdempotency(request, () => createCategory(request));
+// sign-in check comes first: nobody anonymous may touch the idempotency store
+export const POST = async (request) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+  return withIdempotency(request, () => createCategory(request));
+};

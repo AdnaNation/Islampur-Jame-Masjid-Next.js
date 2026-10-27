@@ -12,8 +12,11 @@ import {
   openingAt,
 } from "@/lib/accounts";
 import { withIdempotency } from "@/lib/idempotency";
+import { requireAdmin } from "@/lib/auth";
 
 export async function GET(request) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const sp = new URL(request.url).searchParams;
   const type = sp.get("type");
   const categoryId = sp.get("categoryId");
@@ -160,5 +163,9 @@ async function createTransaction(request) {
   return NextResponse.json({ ...doc, _id: result.insertedId });
 }
 
-export const POST = (request) =>
-  withIdempotency(request, () => createTransaction(request));
+// sign-in check comes first: nobody anonymous may touch the idempotency store
+export const POST = async (request) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+  return withIdempotency(request, () => createTransaction(request));
+};

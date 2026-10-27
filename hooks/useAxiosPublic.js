@@ -20,6 +20,12 @@ axiosPublic.interceptors.request.use((config) => {
 // no internet: allowed requests are saved in the phone and sent later
 axiosPublic.interceptors.response.use(undefined, async (error) => {
   if (typeof window !== "undefined") {
+    // signed out / session expired: let the app re-check who is signed in
+    if (
+      error?.response?.status === 401 &&
+      !String(error.config?.url || "").includes("/auth/")
+    )
+      window.dispatchEvent(new Event("masjid-auth-expired"));
     const queued = await maybeQueue(error).catch(() => null);
     if (queued) return queued;
   }

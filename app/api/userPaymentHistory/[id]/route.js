@@ -1,13 +1,29 @@
 import { NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
+import { getSession } from "@/lib/auth";
+import { rateLimit } from "@/lib/rateLimit";
+import { bad, isId } from "@/lib/validate";
 
 const YEARS_BACK = 1;
 
 export async function GET(request, { params }) {
   try {
     const { id } = await params;
-    if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    if (!isId(id)) return bad("ভুল আইডি");
+
+    const session = await getSession(request);
+    if (session?.admin !== true) {
+      if (process.env.PUBLIC_MEMBER_BOARD === "false")
+        return NextResponse.json(
+          { message: "এডমিন হিসেবে আবার সাইন ইন করুন" },
+          { status: 401 },
+        );
+      const limited = await rateLimit(request, {
+        name: "user-payment-history",
+        limit: 60,
+        windowSec: 60,
+      });
+      if (limited) return limited;
     }
 
     const { paymentCollection } = await getCollections();

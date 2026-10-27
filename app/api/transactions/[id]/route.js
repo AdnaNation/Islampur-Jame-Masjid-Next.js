@@ -7,8 +7,11 @@ import {
   validDate,
   cleanAmount,
 } from "@/lib/accounts";
+import { requireAdmin } from "@/lib/auth";
 
 export async function PATCH(request, { params }) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const { id } = await params;
   if (!ObjectId.isValid(id))
     return NextResponse.json({ message: "ভুল আইডি" }, { status: 400 });
@@ -71,6 +74,8 @@ export async function PATCH(request, { params }) {
 
 // DELETE -> remove an entry
 export async function DELETE(request, { params }) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const { id } = await params;
   if (!ObjectId.isValid(id))
     return NextResponse.json({ message: "ভুল আইডি" }, { status: 400 });

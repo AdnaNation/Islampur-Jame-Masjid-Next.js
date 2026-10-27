@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
+import { requireAdmin } from "@/lib/auth";
 
 const timeOf = (m) => m?.updatedAt || m?.createdAtDhaka || m?.createdAt || "";
 
@@ -11,6 +12,8 @@ const slim = (m) => ({
 });
 
 export async function GET(request) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const waId = searchParams.get("waId");
   const { messageCollection } = await getCollections();

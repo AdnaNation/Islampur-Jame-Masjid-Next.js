@@ -211,7 +211,7 @@ const PaymentPage = () => {
       Swal.fire({
         icon: "error",
         title: "কিছু একটা ভুল হয়েছে",
-        text: "আবার চেষ্টা করুন",
+        text: "No, Trx ID সঠিক ভাবে দিয়ে আবার চেষ্টা করুন",
       });
     } finally {
       setSubmitting(false);

@@ -20,8 +20,6 @@ export async function GET(request) {
 }
 
 async function create(request) {
-  const denied = await requireAdmin(request);
-  if (denied) return denied;
   const { doc, error } = cleanNotice(await request.json());
   if (error) return NextResponse.json({ message: error }, { status: 400 });
   const c = await getNoticeCollection();
@@ -31,5 +29,9 @@ async function create(request) {
   return NextResponse.json({ ...full, _id: r.insertedId });
 }
 
-export const POST = (request) =>
-  withIdempotency(request, () => create(request));
+// sign-in check comes first: nobody anonymous may touch the idempotency store
+export const POST = async (request) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+  return withIdempotency(request, () => create(request));
+};

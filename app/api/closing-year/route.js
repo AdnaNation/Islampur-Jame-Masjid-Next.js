@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
+import { requireAdmin } from "@/lib/auth";
 
-export async function PATCH() {
+export async function PATCH(request) {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
   const { userCollection } = await getCollections();
   try {
     const result = await userCollection.updateMany({}, [

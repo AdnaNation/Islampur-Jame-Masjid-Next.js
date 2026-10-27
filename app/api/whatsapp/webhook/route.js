@@ -1,8 +1,28 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { ObjectId } from "mongodb";
 import { getCollections } from "@/lib/mongodb";
 
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const FB_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
+
+const safeEq = (a, b) => {
+  const x = Buffer.from(String(a));
+  const y = Buffer.from(String(b));
+  return x.length === y.length && timingSafeEqual(x, y);
+};
+
+function validSignature(rawBody, header) {
+  const secrets = String(process.env.META_APP_SECRET || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!secrets.length || !header) return false; // not configured -> reject (fail closed)
+  return secrets.some((secret) => {
+    const expected =
+      "sha256=" + createHmac("sha256", secret).update(rawBody).digest("hex");
+    return safeEq(expected, header);
+  });
+}
 
 const GREETING = `আসসালামু আলাইকুম।\n\n🕌 *ইসলামপুর জামে মসজিদ* সেবায় আপনাকে স্বাগতম।\n\nসহজে তথ্য পেতে নিচের নম্বর বা কিওয়ার্ডগুলো লিখে মেসেজ দিন:\n\n1️⃣ *Due* (বা ১) - বকেয়া জানতে\n2️⃣ *Contact* (বা ২) - কমিটির সাথে যোগাযোগ\n3️⃣ *Namaz* (বা ৩) - নামাজের সময়সূচি\n\n_যেকোনো সময় প্রধান মেনুতে ফিরতে *Menu* বা *0* লিখুন।_`;
 
@@ -289,8 +309,9 @@ async function processLogic(textRaw, session, from) {
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   if (
+    VERIFY_TOKEN &&
     searchParams.get("hub.mode") === "subscribe" &&
-    searchParams.get("hub.verify_token") === VERIFY_TOKEN
+    safeEq(searchParams.get("hub.verify_token") ?? "", VERIFY_TOKEN)
   ) {
     return new Response(searchParams.get("hub.challenge"), { status: 200 });
   }
@@ -298,9 +319,17 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  // read the RAW body first: the signature is calculated over the exact bytes
+  const rawBody = await req.text();
+  if (!validSignature(rawBody, req.headers.get("x-hub-signature-256"))) {
+    if (!process.env.META_APP_SECRET)
+      console.error("META_APP_SECRET is not set - rejecting all webhook calls");
+    return new Response("Forbidden", { status: 403 });
+  }
+
   try {
-    const body = await req.json();
-    console.log("WEBHOOK:", JSON.stringify(body).slice(0, 1000));
+    const body = JSON.parse(rawBody);
+    // (the old console.log of the whole message - phone numbers + texts - is gone)
 
     // === 1. MESSENGER ===
     const messaging = body.entry?.[0]?.messaging?.[0];
@@ -397,6 +426,7 @@ export async function POST(req) {
     return Response.json({ status: "sent_wa" }, { status: 200 });
   } catch (err) {
     console.error("Webhook error:", err);
-    return Response.json({ error: err.message }, { status: 200 });
+    // always 200 so Meta doesn't keep retrying, but never echo internals back
+    return Response.json({ status: "error" }, { status: 200 });
   }
 }

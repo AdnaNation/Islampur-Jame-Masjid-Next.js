@@ -6,6 +6,8 @@ import { formatMonthRange } from "@/lib/monthRange";
 import { createPaySlip } from "@/lib/paySlip";
 import { actionTime, withIdempotency } from "@/lib/idempotency";
 import { isReplay, safeWhatsAppReceipt } from "@/lib/notify";
+import { requireAdmin } from "@/lib/auth";
+import { bad, isId, isMonthList, money, str } from "@/lib/validate";
 
 async function sendConfirmationSms(number, message) {
   if (!number || number.length !== 11) return;
@@ -17,14 +19,37 @@ async function sendConfirmationSms(number, message) {
 }
 
 async function createCombinedPayment(request) {
-  const body = await request.json();
-  const { userId, name, home, monthly, tarabi, due } = body;
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") return bad();
+  const userId = body.userId;
+  const name = str(body.name, 100);
+  const home = str(body.home, 100);
 
-  if (!userId || (!monthly && !tarabi && !due)) {
+  if (!isId(userId) || (!body.monthly && !body.tarabi && !body.due)) {
     return NextResponse.json(
       { error: "userId and at least one of monthly, tarabi, due are required" },
       { status: 400 },
     );
+  }
+
+  // re-build the three parts from validated values only
+  let monthly = null;
+  let tarabi = null;
+  let due = null;
+  if (body.monthly) {
+    const amount = money(body.monthly.amount);
+    if (!isMonthList(body.monthly.months) || !amount) return bad();
+    monthly = { months: body.monthly.months, amount };
+  }
+  if (body.tarabi) {
+    const amount = money(body.tarabi.amount);
+    if (!amount) return bad();
+    tarabi = { amount };
+  }
+  if (body.due) {
+    const amount = money(body.due.amount);
+    if (!amount) return bad();
+    due = { amount };
   }
 
   const { userCollection, paymentCollection } = await getCollections();
@@ -137,5 +162,9 @@ async function createCombinedPayment(request) {
   return NextResponse.json({ success: true, slipId });
 }
 
-export const POST = (request) =>
-  withIdempotency(request, () => createCombinedPayment(request));
+// sign-in check comes first: nobody anonymous may touch the idempotency store
+export const POST = async (request) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+  return withIdempotency(request, () => createCombinedPayment(request));
+};
