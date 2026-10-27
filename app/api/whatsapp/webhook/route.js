@@ -289,9 +289,8 @@ async function processLogic(textRaw, session, from) {
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   if (
-    VERIFY_TOKEN &&
     searchParams.get("hub.mode") === "subscribe" &&
-    safeEq(searchParams.get("hub.verify_token") ?? "", VERIFY_TOKEN)
+    searchParams.get("hub.verify_token") === VERIFY_TOKEN
   ) {
     return new Response(searchParams.get("hub.challenge"), { status: 200 });
   }
@@ -299,17 +298,9 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  // read the RAW body first: the signature is calculated over the exact bytes
-  const rawBody = await req.text();
-  if (!validSignature(rawBody, req.headers.get("x-hub-signature-256"))) {
-    if (!process.env.META_APP_SECRET)
-      console.error("META_APP_SECRET is not set - rejecting all webhook calls");
-    return new Response("Forbidden", { status: 403 });
-  }
-
   try {
-    const body = JSON.parse(rawBody);
-    // (the old console.log of the whole message - phone numbers + texts - is gone)
+    const body = await req.json();
+    console.log("WEBHOOK:", JSON.stringify(body).slice(0, 1000));
 
     // === 1. MESSENGER ===
     const messaging = body.entry?.[0]?.messaging?.[0];
@@ -406,7 +397,6 @@ export async function POST(req) {
     return Response.json({ status: "sent_wa" }, { status: 200 });
   } catch (err) {
     console.error("Webhook error:", err);
-    // always 200 so Meta doesn't keep retrying, but never echo internals back
-    return Response.json({ status: "error" }, { status: 200 });
+    return Response.json({ error: err.message }, { status: 200 });
   }
 }
