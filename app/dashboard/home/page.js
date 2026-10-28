@@ -223,7 +223,6 @@ const AdminDashboard = () => {
                 }
               });
             axiosPublic.patch("/activity").then((res) => {
-              console.log(res);
               if (res.data.modifiedCount > 0) {
                 refetch();
               }
