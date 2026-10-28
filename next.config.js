@@ -46,6 +46,20 @@ const nextConfig = {
         source: "/dashboard/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
+      // pages with member names, phone numbers or receipts must never be in Google
+      ...[
+        "/fee",
+        "/payment",
+        "/profile",
+        "/addUser",
+        "/offline",
+        "/adminSignin",
+        "/pay/:number",
+        "/pay-slip/:slipId",
+      ].map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      })),
       {
         source: "/sw.js",
         headers: [

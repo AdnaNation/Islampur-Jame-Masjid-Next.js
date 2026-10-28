@@ -2,34 +2,50 @@ import FloatingSocial from "@/components/FloatingSocial";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { INSTALL_CAPTURE_SCRIPT } from "@/lib/installCapture";
+import { SITE } from "@/lib/site";
 
 export const metadata = {
-  metadataBase: new URL("https://www.islampurjamemasjid.org"),
+  metadataBase: new URL(SITE.url),
   title: {
     default: "ইসলামপুর জামে মসজিদ, দুধমুখা, দাগনভূঞা, ফেনী",
     template: "%s | ইসলামপুর জামে মসজিদ",
   },
-  description:
-    "ইসলামপুর জামে মসজিদ, দুধমুখা বাজার, দাগনভূঞা, ফেনী। নামাজের সময়সূচি, নোটিশ বোর্ড এবং অনলাইনে চাঁদা পরিশোধ।",
-  applicationName: "ইসলামপুর জামে মসজিদ",
+  description: SITE.shortDescription,
+  applicationName: SITE.name,
+  authors: [{ name: SITE.name, url: SITE.url }],
+  creator: SITE.name,
+  publisher: SITE.name,
+  formatDetection: { telephone: false },
   openGraph: {
     type: "website",
     locale: "bn_BD",
-    siteName: "ইসলামপুর জামে মসজিদ",
+    url: SITE.url,
+    siteName: SITE.name,
+    title: "ইসলামপুর জামে মসজিদ, দুধমুখা, দাগনভূঞা, ফেনী",
+    description: SITE.shortDescription,
     images: [
-      { url: "/mosque.jpg", alt: "ইসলামপুর জামে মসজিদ" },
-      { url: "/mosque-2.jpg", alt: "ইসলামপুর জামে মসজিদ" },
-      { url: "/mosque-3.jpg", alt: "ইসলামপুর জামে মসজিদ" },
-      { url: "/mosque-4.jpg", alt: "ইসলামপুর জামে মসজিদ" },
+      {
+        url: "/mosque.jpg",
+        width: 1195,
+        height: 896,
+        alt: "ইসলামপুর জামে মসজিদ",
+      },
     ],
   },
-  twitter: { card: "summary_large_image" },
+  twitter: {
+    card: "summary_large_image",
+    title: "ইসলামপুর জামে মসজিদ, দুধমুখা, দাগনভূঞা, ফেনী",
+    description: SITE.shortDescription,
+    images: ["/mosque.jpg"],
+  },
   icons: { icon: "/logo.jpg", apple: "/pwa/icon-192.png" },
   appleWebApp: {
     capable: true,
     title: "ইসলামপুর মসজিদ",
     statusBarStyle: "default",
   },
+
+  verification: { google: "zqN12cO15bmn1ExFErw6Ol1QqpzQ6TDLLRMAp9SZkWY" },
 };
 
 export const viewport = {

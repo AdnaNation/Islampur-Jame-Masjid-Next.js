@@ -5,50 +5,45 @@ import QuranSection from "@/components/QuranSection";
 import HeroSlider from "@/components/HeroSlider";
 import HeroNoticeLink from "@/components/HeroNoticeLink";
 import NoticeBoard from "@/components/NoticeBoard";
+import JsonLd from "@/components/JsonLd";
+import { OG_BASE, SITE, homeJsonLd, mapsUrl } from "@/lib/site";
+import { getNoticeList, getPrayerTimes } from "@/lib/publicData";
+
+// Built on the server and refreshed every minute: Google gets the real prayer
+// times and latest notice as plain HTML, visitors still get live updates.
+export const revalidate = 60;
 export const metadata = {
   title: {
-    absolute:
-      "ইসলামপুর জামে মসজিদ, দুধমুখা, দাগনভূঞা, ফেনী | নামাজের সময়সূচি ও নোটিশ",
+    absolute: "ইসলামপুর জামে মসজিদ, দাগনভূঞা, ফেনী | নামাজের সময়সূচি",
   },
   description:
-    "ইসলামপুর জামে মসজিদ (স্থাপিত ১৯৪০), দুধমুখা বাজার, দাগনভূঞা, ফেনী। আজকের নামাজের সময়সূচি, নোটিশ বোর্ড ও অনলাইনে চাঁদা পরিশোধ।",
+    "ইসলামপুর জামে মসজিদ (স্থাপিত ১৯৪০), দুধমুখা বাজার, দাগনভূঞা, ফেনী। আজকের নামাজের সময়সূচি, নোটিশ বোর্ড ও অনলাইনে চাঁদা পরিশোধ। Islampur Jame Masjid, Dagonbhuiyan, Feni.",
   alternates: { canonical: "/" },
-};
-
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Mosque",
-  name: "ইসলামপুর জামে মসজিদ",
-  alternateName: "Islampur Jame Masjid",
-  url: "https://www.islampurjamemasjid.org",
-  image: "https://www.islampurjamemasjid.org/mosque.jpg",
-  foundingDate: "1940",
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "দুধমুখা বাজার",
-    addressLocality: "দাগনভূঞা",
-    addressRegion: "ফেনী",
-    addressCountry: "BD",
+  openGraph: {
+    ...OG_BASE,
+    url: "/",
+    title: "ইসলামপুর জামে মসজিদ, দাগনভূঞা, ফেনী | নামাজের সময়সূচি",
+    description:
+      "আজকের নামাজের সময়সূচি, নোটিশ বোর্ড ও অনলাইনে চাঁদা পরিশোধ - ইসলামপুর জামে মসজিদ, দাগনভূঞা, ফেনী।",
   },
-  geo: { "@type": "GeoCoordinates", latitude: 22.893773, longitude: 91.260654 },
 };
 
-export default function Home() {
+export default async function Home() {
+  // each is optional: if the database is slow, the page still works (the browser loads them)
+  const [prayer, notices] = await Promise.all([
+    getPrayerTimes().catch(() => undefined),
+    getNoticeList(1),
+  ]);
+
   const HERO_IMAGES = [
     { src: "/mosque.jpg", alt: "ইসলামপুর জামে মসজিদের প্রবেশদ্বার" },
-    {
-      src: "/mosque-2.jpg",
-      alt: "মসজিদের ভেতরের দৃশ্য",
-    },
+    { src: "/mosque-2.jpg", alt: "মসজিদের ভেতরের দৃশ্য" },
     { src: "/mosque-3.jpg", alt: "মসজিদের সামনের অংশ" },
     { src: "/mosque-4.jpg", alt: "মসজিদের সামনের অংশ" },
   ];
   return (
     <div className="bg-[#f7f5ef]">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={homeJsonLd()} />
       {/* Hero */}
       <section className="bg-gradient-to-b from-[#0f3d2e] to-[#14523d] text-white">
         <div className="grid items-center max-w-5xl gap-8 px-4 py-10 mx-auto md:grid-cols-2 md:py-14">
@@ -59,6 +54,9 @@ export default function Home() {
             <h1 className="mt-3 text-3xl font-bold leading-tight md:text-4xl">
               ইসলামপুর জামে মসজিদ
             </h1>
+            <p lang="en" className="mt-1 text-sm font-medium text-amber-200/90">
+              Islampur Jame Masjid
+            </p>
             <p className="flex items-center justify-center gap-1 mt-2 text-sm text-white/80 md:justify-start">
               <MdLocationOn className="text-lg text-amber-300" />
               দুধমুখা বাজার, দাগনভূঞা, ফেনী
@@ -95,9 +93,44 @@ export default function Home() {
       </section>
 
       <div className="max-w-3xl px-4 py-8 mx-auto space-y-6">
-        <NoticeBoard />
-        <PrayerTimes />
+        <NoticeBoard initialNotices={notices.length ? notices : undefined} />
+        <PrayerTimes initialData={prayer} />
         <QuranSection />
+
+        {/* Plain text for search engines AND visitors: who we are and where we are */}
+        <section
+          aria-labelledby="about-heading"
+          className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200"
+        >
+          <h2 id="about-heading" className="text-lg font-bold text-[#0f3d2e]">
+            ইসলামপুর জামে মসজিদ সম্পর্কে
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            ইসলামপুর জামে মসজিদ ফেনী জেলার দাগনভূঞা উপজেলার দুধমুখা বাজারের
+            অদূরে ইসলামপুর সমাজে অবস্থিত। মসজিদটি ১৯৪০ সালে প্রতিষ্ঠিত। এখানে
+            পাঁচ ওয়াক্ত নামাজ, জুমআ ও তারাবীহ জামাআতের সাথে আদায় করা হয়। এই
+            ওয়েবসাইটে আপনি নামাজের সময়সূচি, মসজিদের নোটিশ ও ঘোষণা দেখতে এবং
+            অনলাইনে মাসিক চাঁদা, তারাবীর চাঁদা ও বকেয়া পরিশোধ করতে পারবেন।
+          </p>
+          <p lang="en" className="mt-2 text-sm leading-relaxed text-slate-600">
+            Islampur Jame Masjid is a mosque near Dudmukha Bazar in Dagonbhuiyan
+            Upazila, Feni, Bangladesh, established in 1940. Find daily prayer
+            times, mosque notices and pay your monthly donation online.
+          </p>
+          <address className="mt-3 text-sm not-italic text-slate-700">
+            <strong>ঠিকানা:</strong> {SITE.address.street},{" "}
+            {SITE.address.locality}, {SITE.address.region}
+          </address>
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-[#0f3d2e] hover:underline"
+          >
+            <MdLocationOn className="text-lg text-amber-600" />
+            গুগল ম্যাপে দেখুন
+          </a>
+        </section>
       </div>
     </div>
   );

@@ -44,9 +44,8 @@ export function NoticeCard({ notice }) {
   );
 }
 
-// Homepage section: latest 3 notices. Hidden while loading or when there are none.
-export default function NoticeBoard() {
-  const { data: notices = [] } = useNotices(1);
+export default function NoticeBoard({ initialNotices }) {
+  const { data: notices = [] } = useNotices(1, initialNotices);
   if (!notices.length) return null;
 
   return (

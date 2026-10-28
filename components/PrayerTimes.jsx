@@ -87,7 +87,7 @@ function formatDiff(totalMin) {
   return `${hours}${mins}পরে`;
 }
 
-const PrayerTimes = () => {
+const PrayerTimes = ({ initialData }) => {
   const queryClient = useQueryClient();
   const [isAdmin] = useAdmin();
   const [isModerator] = useModerator();
@@ -110,7 +110,8 @@ const PrayerTimes = () => {
       if (!res.ok) throw new Error("Failed to load prayer times");
       return res.json();
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
+    initialData,
   });
 
   const mutation = useMutation({

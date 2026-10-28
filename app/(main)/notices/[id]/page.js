@@ -1,56 +1,87 @@
-"use client";
+import { notFound } from "next/navigation";
+import NoticeDetail from "@/components/NoticeDetail";
+import JsonLd from "@/components/JsonLd";
+import { getNotice } from "@/lib/publicData";
+import { OG_BASE, SITE, abs } from "@/lib/site";
 
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { MdArrowBack } from "react-icons/md";
-import useAxiosPublic from "@/hooks/useAxiosPublic";
-import NoticeSheets from "@/components/NoticeSheets";
-import LedgerActions from "@/components/LedgerActions";
-import { PageLoader } from "@/components/Loader";
+export const revalidate = 60;
 
-export default function NoticeDetailPage() {
-  const { id } = useParams();
-  const axiosPublic = useAxiosPublic();
-  const {
-    data: notice,
-    isPending,
-    isError,
-  } = useQuery({
-    queryKey: ["notice", id],
-    queryFn: async () => (await axiosPublic.get(`/notices/${id}`)).data,
-    retry: false,
-  });
+const headlineOf = (n) =>
+  n.subject ? `${n.title} — ${n.subject}` : n.title || "নোটিশ";
+
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  const n = await getNotice(id);
+  if (!n) return { title: "নোটিশ পাওয়া যায়নি", robots: { index: false } };
+
+  const title = headlineOf(n);
+  const description = n.excerpt || `ইসলামপুর জামে মসজিদের নোটিশ - ${n.date}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/notices/${id}` },
+    openGraph: {
+      ...OG_BASE,
+      type: "article",
+      url: `/notices/${id}`,
+      title,
+      description,
+      publishedTime: n.createdAt || n.date,
+      modifiedTime: n.updatedAt || n.date,
+    },
+  };
+}
+
+export default async function NoticePage({ params }) {
+  const { id } = await params;
+  const notice = await getNotice(id);
+  if (!notice) notFound(); // a real 404, so Google drops deleted notices
+
+  const url = abs(`/notices/${id}`);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        headline: headlineOf(notice).slice(0, 110),
+        description: notice.excerpt || undefined,
+        datePublished: notice.createdAt || notice.date,
+        dateModified: notice.updatedAt || notice.date,
+        inLanguage: "bn",
+        mainEntityOfPage: url,
+        image: [abs(SITE.image)],
+        author: { "@id": abs("/#mosque") },
+        publisher: {
+          "@type": "Organization",
+          name: SITE.name,
+          logo: { "@type": "ImageObject", url: abs(SITE.logo) },
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: SITE.name, item: abs("/") },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "নোটিশ বোর্ড",
+            item: abs("/notices"),
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: headlineOf(notice),
+            item: url,
+          },
+        ],
+      },
+    ],
+  };
 
   return (
-    <div className="bg-[#f7f5ef] min-h-screen px-2 py-6 print:p-0 print:bg-white">
-      <div className="max-w-3xl mx-auto mb-4 print:hidden">
-        <Link
-          href="/notices"
-          className="inline-flex items-center gap-1 text-sm text-[#0f3d2e] hover:underline"
-        >
-          <MdArrowBack /> সব নোটিশ
-        </Link>
-      </div>
-
-      {isPending && <PageLoader />}
-      {isError && (
-        <p className="py-10 text-center text-rose-600">
-          নোটিশটি পাওয়া যায়নি।
-        </p>
-      )}
-
-      {notice && (
-        <>
-          <div className="max-w-3xl mx-auto mb-4 print:hidden">
-            <LedgerActions
-              containerId="notice-sheet"
-              fileName={`notice-${notice.date}`}
-            />
-          </div>
-          <NoticeSheets notice={notice} />
-        </>
-      )}
-    </div>
+    <>
+      <JsonLd data={jsonLd} />
+      <NoticeDetail id={id} initialNotice={notice} />
+    </>
   );
 }

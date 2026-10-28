@@ -57,7 +57,7 @@ export default function HeroSlider({ images = [] }) {
               fill
               sizes="(min-width: 768px) 480px, 100vw"
               priority={i === 0}
-              loading="eager"
+              loading={i === 0 ? "eager" : "lazy"}
               className="object-cover"
             />
             {img.caption && (
