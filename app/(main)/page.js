@@ -59,7 +59,7 @@ export default async function Home() {
             </p>
             <p className="flex items-center justify-center gap-1 mt-2 text-sm text-white/80 md:justify-start">
               <MdLocationOn className="text-lg text-amber-300" />
-              দুধমুখা বাজার, দাগনভূঞা, ফেনী
+              দুধমুখা, দাগনভূঞা, ফেনী
             </p>
             <p className="mt-3 text-sm leading-relaxed text-white/75">
               ইসলামপুর জামে মসজিদ ১৯৪০ সালে প্রতিষ্ঠিত। ফেনীর দাগনভূঞা উপজেলার

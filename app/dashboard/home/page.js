@@ -196,7 +196,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const ClosingYear = async () => {
+  const ClosingYear1 = async () => {
     setLoading2(true);
     await axiosPublic.patch("/closing-year").then((res) => {
       if (res.data.modifiedCount > 0) {
@@ -222,6 +222,18 @@ const AdminDashboard = () => {
                   axiosPublic.post("/sms", { number, message });
                 }
               });
+
+            try {
+              const wa = axiosPublic.post("/whatsapp/year-close", {
+                to: number,
+                year: lastClosingYear?.data?.lastSendingYear + 1,
+                paid: res?.data?.totalPaid,
+                due: userRes?.data?.Due,
+              });
+              if (wa.data?.status !== "sent") failedWhatsapp.push(number);
+            } catch {
+              failedWhatsapp.push(number);
+            }
             axiosPublic.patch("/activity").then((res) => {
               if (res.data.modifiedCount > 0) {
                 refetch();
@@ -236,6 +248,84 @@ const AdminDashboard = () => {
         setLoading2(false);
       }
     });
+  };
+
+  const ClosingYear = async () => {
+    if (loading2) return;
+
+    const lastYear = lastClosingYear?.data?.lastSendingYear;
+    const year = Number(lastYear) + 1;
+    if (typeof lastYear !== "number" || !Number.isInteger(year) || year < 2000)
+      return;
+
+    setLoading2(true);
+    const failedSms = [];
+    const failedWhatsapp = [];
+
+    try {
+      // 1) close the year for every member
+      const closeRes = await axiosPublic.patch("/closing-year");
+
+      if (closeRes.data.modifiedCount > 0) {
+        const numbers = allNumber[0].map((n) => n.Number);
+        for (const number of numbers) {
+          try {
+            const { data: user } = await axiosPublic.get(
+              `/userByNumber/${number}`,
+            );
+            if (!user?._id) continue;
+
+            const { data: pay } = await axiosPublic.get(
+              `/userPayment/${user._id}/${year}`,
+            );
+            if (!pay) continue;
+
+            const paid = pay.totalPaid ?? 0;
+            const due = Number(user.Due) || 0;
+
+            try {
+              const message = `${year} সাল শেষে মাসিক চাঁদার হিসাবঃ\n\nপরিশোধিতঃ ${paid}।\nবকেয়াঃ ${due}।\n\n-ইসলামপুর জামে মসজিদ`;
+              await axiosPublic.post("/sms", { number, message });
+            } catch {
+              failedSms.push(number);
+            }
+
+            // WhatsApp - only for members who still owe something
+            if (due > 0) {
+              try {
+                const wa = await axiosPublic.post("/whatsapp/year-close", {
+                  to: number,
+                  year,
+                  paid,
+                  due: String(due),
+                });
+                if (wa.data?.status !== "sent") failedWhatsapp.push(number);
+              } catch {
+                failedWhatsapp.push(number);
+              }
+            }
+          } catch {
+            failedSms.push(number);
+          }
+        }
+
+        const act = await axiosPublic.patch("/activity");
+        if (act.data.modifiedCount > 0) refetch();
+      }
+
+      // 4) start the new year
+      await axiosPublic.patch("/next-year");
+    } finally {
+      setLoading2(false);
+    }
+
+    if (failedSms.length || failedWhatsapp.length) {
+      Swal.fire({
+        icon: "info",
+        title: "কিছু মেসেজ যায়নি",
+        text: `SMS যায়নি: ${failedSms.length} জন, WhatsApp যায়নি: ${failedWhatsapp.length} জন (WhatsApp নেই বা নাম্বার ভুল হতে পারে)।`,
+      });
+    }
   };
 
   const pct = (v) => (total > 0 ? Math.round((v / total) * 100) : 0);
