@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Swal from "sweetalert2";
@@ -10,6 +10,13 @@ import LedgerActions from "@/components/LedgerActions";
 import { BtnLoading } from "@/components/Loader";
 import { bn } from "@/lib/accountReport";
 import { noticeDate } from "@/lib/noticeFormat";
+import NoticeTableEditor from "@/components/NoticeTableEditor";
+import NoticeAttachments from "@/components/NoticeAttachments";
+import {
+  markerFor,
+  removeTableFromBody,
+  withoutMarker,
+} from "@/lib/noticeTable";
 
 const DRAFT_KEY = "notice-draft";
 
@@ -26,6 +33,8 @@ const emptyNotice = () => ({
   subject: "",
   salutation: "",
   body: "",
+  tables: [],
+  attachments: [],
   showSign: true,
 });
 
@@ -40,6 +49,7 @@ export default function NoticePage() {
   const [pages, setPages] = useState(1);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
+  const bodyRef = useRef(null);
 
   const set = (key) => (e) =>
     setN((p) => ({
@@ -81,9 +91,35 @@ export default function NoticePage() {
     if (confirm("সব লেখা মুছে নতুন নোটিশ শুরু করবেন?")) reset();
   };
 
+  // put  [[table:N]]  into the text, where the cursor is
+  const insertMarker = (i) => {
+    const k = i + 1;
+    const pos = bodyRef.current?.selectionStart;
+    setN((p) => {
+      const at = Math.min(pos ?? p.body.length, p.body.length);
+      const before = withoutMarker(p.body.slice(0, at), k);
+      const after = withoutMarker(p.body.slice(at), k);
+      const pre = before && !before.endsWith("\n") ? "\n" : "";
+      const post = after && !after.startsWith("\n") ? "\n" : "";
+      return { ...p, body: before + pre + markerFor(k) + post + after };
+    });
+  };
+
+  const removeTable = (i) => {
+    if (!confirm(`টেবিল ${i + 1} মুছে ফেলবেন?`)) return;
+    setN((p) => ({
+      ...p,
+      tables: p.tables.filter((_, k) => k !== i),
+      body: removeTableFromBody(p.body, i + 1),
+    }));
+  };
+
   async function publish() {
-    if (!n.body.trim()) {
-      Swal.fire({ icon: "warning", text: "আগে নোটিশের লেখা লিখুন" });
+    if (!n.body.trim() && !n.tables.length && !n.attachments.length) {
+      Swal.fire({
+        icon: "warning",
+        text: "নোটিশের লেখা, টেবিল বা সংযুক্ত ফাইল দিন",
+      });
       return;
     }
     setSaving(true);
@@ -92,6 +128,7 @@ export default function NoticePage() {
         ? await axiosPublic.patch(`/notices/${editingId}`, n)
         : await axiosPublic.post("/notices", n);
       setEditingId(res.data._id);
+      setN((p) => ({ ...p, attachments: res.data.attachments || [] }));
       qc.invalidateQueries({ queryKey: ["notices"] });
       Swal.fire({
         icon: "success",
@@ -116,6 +153,8 @@ export default function NoticePage() {
         subject: data.subject || "",
         salutation: data.salutation || "",
         body: data.body || "",
+        tables: data.tables || [],
+        attachments: data.attachments || [],
         showSign: data.showSign !== false,
       });
       setEditingId(id);
@@ -221,6 +260,7 @@ export default function NoticePage() {
             নোটিশের লেখা
           </span>
           <textarea
+            ref={bodyRef}
             value={n.body}
             onChange={set("body")}
             rows={12}
@@ -228,6 +268,18 @@ export default function NoticePage() {
             className={`${field} leading-relaxed`}
           />
         </label>
+
+        <NoticeTableEditor
+          tables={n.tables}
+          onChange={(tables) => setN((p) => ({ ...p, tables }))}
+          onInsert={insertMarker}
+          onRemove={removeTable}
+        />
+
+        <NoticeAttachments
+          attachments={n.attachments}
+          onChange={(attachments) => setN((p) => ({ ...p, attachments }))}
+        />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-sm cursor-pointer">

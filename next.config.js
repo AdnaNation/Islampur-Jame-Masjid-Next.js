@@ -39,7 +39,7 @@ const nextConfig = {
     return [
       { source: "/:path*", headers: securityHeaders },
       {
-        source: "/api/:path*",
+        source: "/api/:path((?!notices/files/).*)",
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },
       {

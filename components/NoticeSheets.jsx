@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Letterhead, { LETTERHEAD } from "@/components/Letterhead";
 import { bn } from "@/lib/accountReport";
+import NoticeTable from "@/components/NoticeTable";
+import { splitBody } from "@/lib/noticeTable";
 
 // ---- edit here -------------------------------------------------------------
 const SIGN_SRC = "/president.jpg";
@@ -72,15 +74,22 @@ function NoticeContent({ n }) {
           {n.salutation}
         </p>
       )}
-      <div
-        style={{
-          whiteSpace: "pre-wrap",
-          textAlign: "justify",
-          overflowWrap: "anywhere",
-        }}
-      >
-        {n.body}
-      </div>
+      {splitBody(n.body, n.tables?.length || 0).map((p, i) =>
+        p.type === "table" ? (
+          <NoticeTable key={i} t={n.tables[p.index]} />
+        ) : (
+          <div
+            key={i}
+            style={{
+              whiteSpace: "pre-wrap",
+              textAlign: "justify",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {p.text}
+          </div>
+        ),
+      )}
       {n.showSign && <SignBlock />}
     </div>
   );

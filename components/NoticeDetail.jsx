@@ -7,6 +7,7 @@ import useAxiosPublic from "@/hooks/useAxiosPublic";
 import NoticeSheets from "@/components/NoticeSheets";
 import LedgerActions from "@/components/LedgerActions";
 import { PageLoader } from "@/components/Loader";
+import NoticeAttachmentList from "./NoticeAttachmentList";
 
 export default function NoticeDetail({ id, initialNotice }) {
   const axiosPublic = useAxiosPublic();
@@ -48,6 +49,7 @@ export default function NoticeDetail({ id, initialNotice }) {
             />
           </div>
           <NoticeSheets notice={notice} />
+          <NoticeAttachmentList attachments={notice.attachments} />
         </>
       )}
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MdCampaign, MdChevronRight } from "react-icons/md";
+import { MdAttachFile, MdCampaign, MdChevronRight } from "react-icons/md";
 import useNotices from "@/hooks/useNotices";
 import { isRecent, noticeDate } from "@/lib/noticeFormat";
 
@@ -22,6 +22,11 @@ export function NoticeCard({ notice }) {
       <div className="flex items-center gap-2 text-xs text-slate-500">
         <span>{noticeDate(notice.date)}</span>
         {isRecent(notice.date) && <NewBadge />}
+        {notice.attachments?.length > 0 && (
+          <span className="inline-flex items-center gap-0.5 text-[#0f3d2e]">
+            <MdAttachFile /> সংযুক্তি
+          </span>
+        )}
       </div>
       <h3 className="mt-1 font-bold text-[#0f3d2e] leading-snug">
         {notice.title}

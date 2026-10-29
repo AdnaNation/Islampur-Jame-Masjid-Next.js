@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { withIdempotency } from "@/lib/idempotency";
-import { cleanNotice, getNoticeCollection, requireAdmin } from "@/lib/notices";
+import {
+  cleanNotice,
+  getNoticeCollection,
+  requireAdmin,
+  resolveAttachments,
+} from "@/lib/notices";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +17,7 @@ export async function GET(request) {
   );
   const c = await getNoticeCollection();
   const list = await c
-    .find({}, { projection: { body: 0, salutation: 0 } })
+    .find({}, { projection: { body: 0, salutation: 0, tables: 0 } })
     .sort({ date: -1, createdAt: -1 })
     .limit(limit)
     .toArray();
@@ -20,11 +25,14 @@ export async function GET(request) {
 }
 
 async function create(request) {
-  const { doc, error } = cleanNotice(await request.json());
+  const { doc, attachmentIds, error } = cleanNotice(
+    await request.json().catch(() => ({})),
+  );
   if (error) return NextResponse.json({ message: error }, { status: 400 });
+  const attachments = await resolveAttachments(attachmentIds);
   const c = await getNoticeCollection();
   const now = new Date();
-  const full = { ...doc, createdAt: now, updatedAt: now };
+  const full = { ...doc, attachments, createdAt: now, updatedAt: now };
   const r = await c.insertOne(full);
   return NextResponse.json({ ...full, _id: r.insertedId });
 }

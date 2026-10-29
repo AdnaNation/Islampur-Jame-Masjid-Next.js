@@ -34,6 +34,7 @@ const API_SKIP = [
   "/api/health",
   "/api/whatsapp",
   "/api/sms-db",
+  "/api/notices/files",
 ];
 const API_MAX_ENTRIES = 300;
 

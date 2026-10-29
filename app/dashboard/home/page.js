@@ -196,60 +196,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const ClosingYear1 = async () => {
-    setLoading2(true);
-    await axiosPublic.patch("/closing-year").then((res) => {
-      if (res.data.modifiedCount > 0) {
-        const numbers = allNumber[0].map((n) => n.Number);
-        for (const number of numbers) {
-          axiosPublic.get(`userByNumber/${number}`).then((userRes) => {
-            axiosPublic
-              .get(
-                `/userPayment/${userRes?.data?._id}/${
-                  lastClosingYear?.data?.lastSendingYear + 1
-                }`,
-              )
-              .then((res) => {
-                if (res?.data) {
-                  const message = `${
-                    lastClosingYear?.data?.lastSendingYear + 1
-                  } সাল শেষে মাসিক চাঁদার হিসাবঃ
-
-        পরিশোধিতঃ ${res?.data?.totalPaid}।
-        বকেয়াঃ ${userRes?.data?.Due}।
-
-        -ইসলামপুর জামে মসজিদ`;
-                  axiosPublic.post("/sms", { number, message });
-                }
-              });
-
-            try {
-              const wa = axiosPublic.post("/whatsapp/year-close", {
-                to: number,
-                year: lastClosingYear?.data?.lastSendingYear + 1,
-                paid: res?.data?.totalPaid,
-                due: userRes?.data?.Due,
-              });
-              if (wa.data?.status !== "sent") failedWhatsapp.push(number);
-            } catch {
-              failedWhatsapp.push(number);
-            }
-            axiosPublic.patch("/activity").then((res) => {
-              if (res.data.modifiedCount > 0) {
-                refetch();
-              }
-            });
-          });
-        }
-      }
-    });
-    await axiosPublic.patch("/next-year").then((res) => {
-      if (res.data.modifiedCount > 0) {
-        setLoading2(false);
-      }
-    });
-  };
-
   const ClosingYear = async () => {
     if (loading2) return;
 
