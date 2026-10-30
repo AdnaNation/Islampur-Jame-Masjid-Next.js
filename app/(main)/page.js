@@ -8,6 +8,7 @@ import NoticeBoard from "@/components/NoticeBoard";
 import JsonLd from "@/components/JsonLd";
 import { OG_BASE, SITE, homeJsonLd, mapsUrl } from "@/lib/site";
 import { getNoticeList, getPrayerTimes } from "@/lib/publicData";
+import HeroDecor from "@/components/HeroDecor";
 
 // Built on the server and refreshed every minute: Google gets the real prayer
 // times and latest notice as plain HTML, visitors still get live updates.
@@ -45,10 +46,21 @@ export default async function Home() {
     <div className="bg-[#f7f5ef]">
       <JsonLd data={homeJsonLd()} />
       {/* Hero */}
-      <section className="bg-gradient-to-b from-[#0f3d2e] to-[#14523d] text-white">
-        <div className="grid items-center max-w-5xl gap-8 px-4 py-10 mx-auto md:grid-cols-2 md:py-14">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#0f3d2e] to-[#14523d] text-white">
+        <HeroDecor />
+        <div className="relative z-10 grid items-center max-w-5xl gap-8 px-4 py-10 mx-auto md:grid-cols-2 md:py-14">
           <div className="text-center md:text-left">
-            <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-white/15 text-amber-200">
+            <p
+              lang="ar"
+              dir="rtl"
+              className="mb-1 text-center hd-bismillah hd-in md:text-left"
+            >
+              بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+            </p>
+            <span
+              className="inline-block px-3 py-1 text-xs font-semibold rounded-full hd-in bg-white/15 text-amber-200"
+              style={{ "--d": "0.15s" }}
+            >
               স্থাপিত ১৯৪০
             </span>
             <h1 className="mt-3 text-3xl font-bold leading-tight md:text-4xl">
@@ -67,10 +79,13 @@ export default async function Home() {
               পাঁচ ওয়াক্ত নামাজ, জুমআ ও তারাবীহ জামাআতের সাথে আদায় করা হয়।
             </p>
 
-            <div className="flex flex-wrap justify-center gap-3 mt-6 md:justify-start">
+            <div
+              className="flex flex-wrap justify-center gap-3 mt-6 hd-in md:justify-start"
+              style={{ "--d": "0.4s" }}
+            >
               <Link
                 href="/pay"
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#0f3d2e] bg-white rounded-full shadow hover:bg-amber-50"
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#0f3d2e] bg-white rounded-full shadow hover:bg-amber-50 hd-cta"
               >
                 <MdPayments className="text-lg" />
                 চাঁদা পরিশোধ করুন
@@ -93,14 +108,20 @@ export default async function Home() {
       </section>
 
       <div className="max-w-3xl px-4 py-8 mx-auto space-y-6">
-        <NoticeBoard initialNotices={notices.length ? notices : undefined} />
-        <PrayerTimes initialData={prayer} />
-        <QuranSection />
+        <div className="reveal">
+          <NoticeBoard initialNotices={notices.length ? notices : undefined} />
+        </div>
+        <div className="reveal">
+          <PrayerTimes initialData={prayer} />
+        </div>
+        <div className="reveal">
+          <QuranSection />
+        </div>
 
         {/* Plain text for search engines AND visitors: who we are and where we are */}
         <section
           aria-labelledby="about-heading"
-          className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200"
+          className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200 reveal"
         >
           <h2 id="about-heading" className="text-lg font-bold text-[#0f3d2e]">
             ইসলামপুর জামে মসজিদ সম্পর্কে

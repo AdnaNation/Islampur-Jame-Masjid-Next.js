@@ -194,7 +194,7 @@ const PrayerTimes = ({ initialData }) => {
                     key={key}
                     className={`relative flex flex-col items-center rounded-xl border p-4 ${
                       isNext
-                        ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200"
+                        ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200 prayer-next"
                         : "border-stone-200 bg-stone-50"
                     }`}
                   >
