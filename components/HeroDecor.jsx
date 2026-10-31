@@ -1,10 +1,6 @@
-// Decorative artwork for the home-page hero: a mosque skyline, hanging lanterns,
-// twinkling stars and a slowly turning geometric pattern.
-// It is pure SVG + CSS (see "Hero decorations" in app/globals.css): no JavaScript is
-// sent to the browser, it never changes the page layout, and it is hidden from
-// screen readers. All movement stops for people who turn on "reduce motion".
+import HeroSky from "@/components/HeroSky";
+import Skyline from "@/components/Skyline";
 
-// [left, top, size px, twinkle delay s] - only the upper part of the hero
 const STARS = [
   ["8%", "30%", 9, 0],
   ["18%", "14%", 7, 1.1],
@@ -20,11 +16,19 @@ const STARS = [
   ["4%", "58%", 7, 2.8],
 ];
 
-// Hanging ornaments along the top edge. w = width in px (a little larger on desktop),
-// cord = extra string length, d = start delay, t = swing time. Change x to move one.
+// Eid: bigger, faster sparkles
+const STARS_EID = [
+  ["14%", "22%", 15, 0.2],
+  ["31%", "34%", 13, 1.0],
+  ["52%", "16%", 16, 0.6],
+  ["69%", "40%", 13, 1.5],
+  ["88%", "28%", 15, 0.9],
+  ["24%", "52%", 12, 1.9],
+];
+
 const HANGERS = [
-  { kind: "lantern", x: "9%", w: 26, cord: 4, d: 0, t: 7.2, cls: "" },
-  { kind: "star", x: "29%", w: 20, cord: 16, d: 0.6, t: 5.6, cls: "" },
+  { kind: "lantern", x: "9%", w: 26, cord: 4, d: 0, t: 5.2, cls: "" },
+  { kind: "star", x: "29%", w: 20, cord: 16, d: 0.6, t: 4.6, cls: "" },
   {
     kind: "lantern",
     x: "50%",
@@ -36,6 +40,45 @@ const HANGERS = [
   },
   { kind: "crescent", x: "71%", w: 22, cord: 12, d: 0.9, t: 4.9, cls: "" },
   { kind: "lantern", x: "91%", w: 26, cord: 6, d: 0.5, t: 5.4, cls: "" },
+];
+
+// smaller set for page banners
+const HANGERS_COMPACT = [
+  { kind: "lantern", x: "8%", w: 20, cord: 2, d: 0, t: 5.2, cls: "" },
+  {
+    kind: "crescent",
+    x: "50%",
+    w: 18,
+    cord: 8,
+    d: 0.6,
+    t: 4.8,
+    cls: "hidden sm:block",
+  },
+  { kind: "lantern", x: "92%", w: 20, cord: 4, d: 0.4, t: 5.5, cls: "" },
+];
+
+// Ramadan / Eid: more lanterns
+const HANGERS_FESTIVE = [
+  { kind: "lantern", x: "19%", w: 22, cord: 12, d: 0.2, t: 5.0, cls: "" },
+  {
+    kind: "crescent",
+    x: "39%",
+    w: 20,
+    cord: 22,
+    d: 0.7,
+    t: 4.7,
+    cls: "hidden sm:block",
+  },
+  {
+    kind: "lantern",
+    x: "61%",
+    w: 22,
+    cord: 16,
+    d: 0.4,
+    t: 5.5,
+    cls: "hidden sm:block",
+  },
+  { kind: "star", x: "81%", w: 18, cord: 10, d: 1.0, t: 4.4, cls: "" },
 ];
 
 const CRESCENT = "M25.7 8A17 17 0 1 0 40.5 32A14.2 14.2 0 1 1 25.7 8Z";
@@ -114,53 +157,21 @@ const ORNAMENT = {
   crescent: CrescentOrnament,
 };
 
-// small crescent on top of a dome / minaret
-const Finial = ({ x, y, k }) => (
-  <path d={CRESCENT} transform={`translate(${x} ${y}) scale(${k})`} />
-);
+export default function HeroDecor({ variant = "hero", sky, timings, season }) {
+  const compact = variant === "compact";
+  const festive =
+    season === "ramadan" || season === "eid-fitr" || season === "eid-adha";
+  const eid = season === "eid-fitr" || season === "eid-adha";
 
-// a lit window that flickers (delay in seconds)
-const Win = ({ d, delay = 0 }) => (
-  <path
-    d={d}
-    fill="#ffd978"
-    className="hd-window"
-    style={{ animationDelay: `${delay}s` }}
-  />
-);
+  const hangers = compact
+    ? HANGERS_COMPACT
+    : festive
+      ? [...HANGERS, ...HANGERS_FESTIVE]
+      : HANGERS;
+  const stars = compact ? STARS.slice(0, 7) : STARS;
 
-function Minaret({ cx }) {
-  return (
+  const art = (
     <>
-      <rect x={cx - 9} y="70" width="18" height="118" />
-      <rect x={cx - 15} y="92" width="30" height="5" />
-      <rect x={cx - 14} y="128" width="28" height="4" />
-      <path d={`M${cx - 11} 70L${cx} 40L${cx + 11} 70Z`} />
-      <rect x={cx - 0.8} y="26" width="1.6" height="16" />
-      <Finial x={cx - 9.6} y={12} k={0.4} />
-      <rect
-        x={cx - 1.5}
-        y="106"
-        width="3"
-        height="14"
-        fill="#ffd978"
-        className="hd-window"
-      />
-      <rect
-        x={cx - 1.5}
-        y="142"
-        width="3"
-        height="14"
-        fill="#ffd978"
-        className="hd-window"
-      />
-    </>
-  );
-}
-
-export default function HeroDecor() {
-  return (
-    <div className="hd-layer" aria-hidden="true">
       {/* shared gradients + the pattern tile (zero size, never drawn by itself) */}
       <svg
         width="0"
@@ -177,12 +188,6 @@ export default function HeroDecor() {
             <stop offset="0" stopColor="#ffd978" stopOpacity=".6" />
             <stop offset="1" stopColor="#ffd978" stopOpacity="0" />
           </radialGradient>
-          <linearGradient id="hd-hill" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="#0b3a2a" stopOpacity="0" />
-            <stop offset=".18" stopColor="#0b3a2a" stopOpacity=".8" />
-            <stop offset=".82" stopColor="#0b3a2a" stopOpacity=".8" />
-            <stop offset="1" stopColor="#0b3a2a" stopOpacity="0" />
-          </linearGradient>
           <pattern
             id="hd-khatam"
             width="80"
@@ -217,17 +222,38 @@ export default function HeroDecor() {
         </svg>
       </div>
 
-      <div className="hd-moonlight" />
+      {/* moonlight + stars: they fade away in the daytime sky */}
+      <div className="hd-night">
+        <div className="hd-moonlight" />
+        {stars.map(([left, top, size, delay], i) => (
+          <span
+            key={i}
+            className="hd-star"
+            style={{
+              left,
+              top,
+              "--s": `${size}px`,
+              animationDelay: `${delay}s`,
+            }}
+          />
+        ))}
+        {eid &&
+          !compact &&
+          STARS_EID.map(([left, top, size, delay], i) => (
+            <span
+              key={`e${i}`}
+              className="hd-star hd-star-eid"
+              style={{
+                left,
+                top,
+                "--s": `${size}px`,
+                animationDelay: `${delay}s`,
+              }}
+            />
+          ))}
+      </div>
 
-      {STARS.map(([left, top, size, delay], i) => (
-        <span
-          key={i}
-          className="hd-star"
-          style={{ left, top, "--s": `${size}px`, animationDelay: `${delay}s` }}
-        />
-      ))}
-
-      {HANGERS.map((h, i) => {
+      {hangers.map((h, i) => {
         const Ornament = ORNAMENT[h.kind];
         return (
           <div
@@ -251,50 +277,24 @@ export default function HeroDecor() {
 
       {/* mosque skyline: flat ground fills any extra width, the mosque stays centred */}
       <div className="hd-ground" />
-      <svg className="hd-skyline" viewBox="0 0 1400 210" focusable="false">
-        <path
-          d="M0 160C180 140 320 170 560 152C760 136 900 168 1100 150C1250 140 1330 156 1400 150V210H0Z"
-          fill="url(#hd-hill)"
-        />
-        <g fill="#071f16" fillOpacity=".92">
-          <rect x="0" y="186" width="1400" height="24" />
-          {/* main hall and dome */}
-          <rect x="590" y="128" width="220" height="60" />
-          <path d="M600 128C600 82 645 56 700 56C755 56 800 82 800 128Z" />
-          <rect x="699.2" y="34" width="1.6" height="24" />
-          <Finial x={688.8} y={16.3} k={0.467} />
-          {/* side domes */}
-          <rect x="520" y="140" width="70" height="48" />
-          <path d="M520 140C520 118 540 108 555 108C570 108 590 118 590 140Z" />
-          <rect x="810" y="140" width="70" height="48" />
-          <path d="M810 140C810 118 830 108 845 108C860 108 880 118 880 140Z" />
-          {/* minarets */}
-          <Minaret cx={470} />
-          <Minaret cx={930} />
-          {/* lower buildings on both sides */}
-          <rect x="230" y="152" width="210" height="36" />
-          <path d="M299 152C299 137.7 316.4 126 330 126C343.6 126 361 137.7 361 152Z" />
-          <rect x="960" y="152" width="210" height="36" />
-          <path d="M1039 152C1039 137.7 1056.4 126 1070 126C1083.6 126 1101 137.7 1101 152Z" />
-          <rect x="150" y="166" width="70" height="22" />
-          <rect x="1180" y="166" width="70" height="22" />
-          <rect x="60" y="172" width="80" height="16" />
-          <rect x="1260" y="172" width="80" height="16" />
-        </g>
+      <Skyline className="hd-skyline" hills={!compact} />
+    </>
+  );
 
-        {/* lit windows (they flicker softly) */}
-        <Win d="M610 172V152A6 6 0 0 1 622 152V172Z" delay={0} />
-        <Win d="M634 172V152A6 6 0 0 1 646 152V172Z" delay={1.2} />
-        <Win d="M658 172V152A6 6 0 0 1 670 152V172Z" delay={0.6} />
-        <Win d="M730 172V152A6 6 0 0 1 742 152V172Z" delay={0.9} />
-        <Win d="M754 172V152A6 6 0 0 1 766 152V172Z" delay={0.3} />
-        <Win d="M778 172V152A6 6 0 0 1 790 152V172Z" delay={1.5} />
-        <Win d="M684 188V166A16 16 0 0 1 716 166V188Z" delay={0.4} />
-        <Win d="M536 180V163A5 5 0 0 1 546 163V180Z" delay={0.7} />
-        <Win d="M554 180V163A5 5 0 0 1 564 163V180Z" delay={1.4} />
-        <Win d="M836 180V163A5 5 0 0 1 846 163V180Z" delay={0.2} />
-        <Win d="M854 180V163A5 5 0 0 1 864 163V180Z" delay={1.1} />
-      </svg>
+  // the home page follows the real time of day; banners keep the night look
+  if (!compact && sky) {
+    return (
+      <HeroSky initial={sky} timings={timings}>
+        {art}
+      </HeroSky>
+    );
+  }
+  return (
+    <div
+      className={`hd-layer${compact ? " hd-compact" : ""}`}
+      aria-hidden="true"
+    >
+      {art}
     </div>
   );
 }

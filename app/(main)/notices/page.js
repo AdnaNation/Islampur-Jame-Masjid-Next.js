@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { MdArrowBack, MdCampaign } from "react-icons/md";
+import { MdCampaign } from "react-icons/md";
+import PageBanner from "@/components/PageBanner";
 import { NoticeCard } from "@/components/NoticeBoard";
 import JsonLd from "@/components/JsonLd";
 import { getNoticeList } from "@/lib/publicData";
@@ -47,18 +47,12 @@ export default async function NoticesPage() {
   return (
     <div className="bg-[#f7f5ef] min-h-screen">
       <JsonLd data={jsonLd} />
-      <div className="max-w-3xl px-4 py-8 mx-auto">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 mb-4 text-sm text-[#0f3d2e] hover:underline"
-        >
-          <MdArrowBack /> হোমে ফিরুন
-        </Link>
-        <h1 className="flex items-center gap-2 mb-5 text-2xl font-bold text-[#0f3d2e]">
-          <MdCampaign className="text-3xl text-amber-600" />
-          নোটিশ বোর্ড
-        </h1>
-
+      <PageBanner
+        title="নোটিশ বোর্ড"
+        subtitle="ইসলামপুর জামে মসজিদের সর্বশেষ নোটিশ ও ঘোষণা"
+        icon={<MdCampaign className="mx-auto mb-1 text-3xl text-amber-300" />}
+      />
+      <div className="relative z-10 max-w-3xl px-4 pt-6 pb-10 mx-auto">
         {notices.length === 0 && (
           <p className="py-10 text-center text-slate-500">
             এখনো কোনো নোটিশ নেই।

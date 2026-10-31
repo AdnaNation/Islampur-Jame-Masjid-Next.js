@@ -209,13 +209,101 @@
 }
 .prayer-next { animation: prayer-glow 2.2s ease-out infinite; }
 
+/* ───── the sky follows the real time of day (see lib/sky.js + HeroSky) ─────
+   "night" is the normal green hero. The other skies are laid over it and faded in. */
+.sky-fx { position: absolute; inset: 0; opacity: 0; transition: opacity 3s ease; }
+.sky-dawn { background: linear-gradient(to bottom, #1b2a55 0%, #5b3b73 40%, #b4506c 76%, #f2a574 100%); }
+.sky-day { background: linear-gradient(to bottom, #0e5a52 0%, #1b7a68 55%, #46a98a 100%); }
+.sky-afternoon { background: linear-gradient(to bottom, #134e3f 0%, #22624a 55%, #8d7b30 88%, #d89b3c 100%); }
+.sky-sunset { background: linear-gradient(to bottom, #1a1f4a 0%, #4b2b63 38%, #b9476b 70%, #f28b3d 100%); }
+[data-sky="dawn"] .sky-dawn,
+[data-sky="day"] .sky-day,
+[data-sky="afternoon"] .sky-afternoon,
+[data-sky="sunset"] .sky-sunset { opacity: 1; }
+
+/* moonlight and stars: full at night, half at dawn/dusk, gone by day */
+.hd-night { transition: opacity 3s ease; }
+[data-sky="dawn"] .hd-night,
+[data-sky="sunset"] .hd-night { opacity: 0.45; }
+[data-sky="day"] .hd-night,
+[data-sky="afternoon"] .hd-night { opacity: 0; }
+
+/* the sun crosses the sky from left to right between sunrise and sunset */
+.hd-sun {
+  position: absolute;
+  left: calc(var(--sun-x, 50) * 1%);
+  top: calc(var(--sun-y, 40) * 1%);
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbe0 0 35%, #ffd766 70%, #ffb84a 100%);
+  box-shadow: 0 0 34px 12px rgba(255, 214, 120, 0.34);
+  opacity: 0.92;
+  animation: hd-breathe 6s ease-in-out infinite;
+}
+@media (min-width: 768px) {
+  .hd-sun { width: 56px; height: 56px; margin: -28px 0 0 -28px; }
+}
+[data-sky="dawn"] .hd-sun,
+[data-sky="sunset"] .hd-sun {
+  background: radial-gradient(circle, #fff1d6 0 30%, #ffb066 70%, #ff8a4a 100%);
+  box-shadow: 0 0 40px 16px rgba(255, 150, 90, 0.5);
+}
+
+/* keeps white hero text readable when the sun passes behind it */
+.hd-text { text-shadow: 0 1px 10px rgba(0, 0, 0, 0.35); }
+
+/* ───── smaller version for the banner at the top of other pages ───── */
+.hd-compact .hd-skyline { height: 56px; }
+.hd-compact .hd-ground { height: 7px; }
+.hd-compact .hd-pattern { opacity: 0.06; }
+@media (min-width: 768px) {
+  .hd-compact .hd-skyline { height: 84px; }
+  .hd-compact .hd-ground { height: 10px; }
+}
+/* keeps the real content of a banner above the artwork */
+.hd-over > :not(.hd-layer) { position: relative; z-index: 10; }
+
+/* ───── Ramadan / Eid / Friday ───── */
+.hd-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  color: #f3d98b;
+  border: 1px solid rgba(243, 217, 139, 0.5);
+  border-radius: 999px;
+  background: rgba(243, 217, 139, 0.12);
+}
+a.hd-ribbon:hover { background: rgba(243, 217, 139, 0.22); }
+.hd-star-eid { animation-duration: 1.8s; background: #fff0b8; }
+
+/* ───── the mosque skyline above the footer (all pages) ───── */
+.ft-skyline { position: relative; height: 56px; overflow: hidden; pointer-events: none; }
+.ft-skyline svg {
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  height: 56px;
+  width: auto;
+  aspect-ratio: 1400 / 210;
+  transform: translateX(-50%);
+}
+@media (min-width: 768px) {
+  .ft-skyline { height: 96px; }
+  .ft-skyline svg { height: 96px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hd-pattern, .hd-moonlight, .hd-star, .hd-sway, .hd-flame, .hd-window,
+  .hd-pattern, .hd-moonlight, .hd-star, .hd-sway, .hd-flame, .hd-window, .hd-sun,
   .hd-in, .hd-cta, .hd-bismillah, .reveal, .prayer-next { animation: none !important; }
   .hd-star { opacity: 0.6; }
+  .sky-fx, .hd-night { transition: none; }
 }
 @media print {
-  .hd-layer { display: none; }
+  .hd-layer, .ft-skyline { display: none; }
   .reveal { animation: none; }
 }
 @media print {

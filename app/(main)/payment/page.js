@@ -16,6 +16,7 @@ import useAxiosPublic from "@/hooks/useAxiosPublic";
 import useHomeName from "@/hooks/useHomeName";
 import useAdmin from "@/hooks/useAdmin";
 import { BtnLoading, SectionLoader } from "@/components/Loader";
+import HeroDecor from "@/components/HeroDecor";
 
 const fmt = (n) => (Number(n) || 0).toLocaleString("en-IN");
 
@@ -218,7 +219,8 @@ const PaymentHistory = () => {
   return (
     <div className="min-h-screen bg-[#f7f5ef]">
       {/* Banner */}
-      <div className="bg-gradient-to-b from-[#0f3d2e] to-[#14523d] px-4 pt-8 pb-16 text-center text-white">
+      <div className="relative overflow-hidden bg-gradient-to-b from-[#0f3d2e] to-[#14523d] px-4 pt-8 pb-20 text-center text-white md:pb-24 hd-over">
+        <HeroDecor variant="compact" />
         <MdHistory className="mx-auto mb-1 text-3xl text-amber-300" />
         <h1 className="text-2xl font-bold">
           {tab === "reverted" ? "বাতিলকৃত পেমেন্ট" : "পেমেন্ট হিস্ট্রি"}
@@ -249,7 +251,7 @@ const PaymentHistory = () => {
         )}
       </div>
 
-      <div className="max-w-5xl px-4 pb-10 mx-auto -mt-10">
+      <div className="relative z-30 max-w-5xl px-4 pb-10 mx-auto -mt-5 ">
         {/* Filters */}
         <div className="p-4 bg-white shadow-md rounded-2xl">
           <div className="grid gap-3 sm:grid-cols-2">

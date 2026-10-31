@@ -9,9 +9,10 @@ import JsonLd from "@/components/JsonLd";
 import { OG_BASE, SITE, homeJsonLd, mapsUrl } from "@/lib/site";
 import { getNoticeList, getPrayerTimes } from "@/lib/publicData";
 import HeroDecor from "@/components/HeroDecor";
+import SeasonRibbon from "@/components/SeasonRibbon";
+import { skyState } from "@/lib/sky";
+import { getSeason } from "@/lib/season";
 
-// Built on the server and refreshed every minute: Google gets the real prayer
-// times and latest notice as plain HTML, visitors still get live updates.
 export const revalidate = 60;
 export const metadata = {
   title: {
@@ -30,11 +31,20 @@ export const metadata = {
 };
 
 export default async function Home() {
-  // each is optional: if the database is slow, the page still works (the browser loads them)
+  const hijriOffsetDays = -1;
+  const seasonOverRide = "";
   const [prayer, notices] = await Promise.all([
     getPrayerTimes().catch(() => undefined),
     getNoticeList(1),
   ]);
+
+  const now = new Date();
+  const sky = skyState(prayer?.timings, now);
+  const season = getSeason(
+    now,
+    Number(hijriOffsetDays || 0),
+    seasonOverRide || "",
+  );
 
   const HERO_IMAGES = [
     { src: "/mosque.jpg", alt: "ইসলামপুর জামে মসজিদের প্রবেশদ্বার" },
@@ -47,9 +57,10 @@ export default async function Home() {
       <JsonLd data={homeJsonLd()} />
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-[#0f3d2e] to-[#14523d] text-white">
-        <HeroDecor />
+        <HeroDecor sky={sky} timings={prayer?.timings} season={season} />
         <div className="relative z-10 grid items-center max-w-5xl gap-8 px-4 py-10 mx-auto md:grid-cols-2 md:py-14">
-          <div className="text-center md:text-left">
+          <div className="text-center md:text-left hd-text">
+            <SeasonRibbon season={season} timings={prayer?.timings} />
             <p
               lang="ar"
               dir="rtl"
@@ -111,7 +122,7 @@ export default async function Home() {
         <div className="reveal">
           <NoticeBoard initialNotices={notices.length ? notices : undefined} />
         </div>
-        <div className="reveal">
+        <div id="salat" className="reveal scroll-mt-4">
           <PrayerTimes initialData={prayer} />
         </div>
         <div className="reveal">
