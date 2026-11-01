@@ -335,66 +335,6 @@ export async function POST(req) {
     }
 
     // === 2. WHATSAPP ===
-    // const value = body.entry?.[0]?.changes?.[0]?.value;
-    // const message = value?.messages?.[0];
-    // if (!message)
-    //   return Response.json({ status: "no message" }, { status: 200 });
-
-    // const from = message.from || value?.contacts?.[0]?.wa_id;
-    // if (!from) return Response.json({ status: "no_sender" }, { status: 200 });
-
-    // const textRaw = message.type === "text" ? (message.text?.body ?? "") : "";
-    // const { sessionCollection, messageCollection } = await getCollections();
-
-    // const session = await sessionCollection.findOne({ _id: from });
-    // if (session?.lastId === message.id)
-    //   return Response.json({ status: "duplicate" }, { status: 200 });
-
-    // // 1. SAVE INCOMING WHATSAPP TO DB
-    // try {
-    //   const now = new Date();
-    //   await messageCollection.updateOne(
-    //     { waId: from },
-    //     {
-    //       $set: { waId: from, name: value?.contacts?.[0]?.profile?.name || "" },
-    //       $push: {
-    //         messages: {
-    //           messageId: message.id,
-    //           text: textRaw,
-    //           type: message.type,
-    //           updatedAt: now,
-    //         },
-    //       },
-    //     },
-    //     { upsert: true },
-    //   );
-    // } catch (e) {
-    //   console.error("WA save failed", e);
-    // }
-
-    // const isSessionExpired =
-    //   session?.updatedAt &&
-    //   Date.now() - new Date(session.updatedAt).getTime() > 15 * 60 * 1000;
-    // const currentSession = isSessionExpired ? { step: null } : session;
-
-    // const out = await processLogic(textRaw, currentSession, from);
-
-    // await sessionCollection.updateOne(
-    //   { _id: from },
-    //   {
-    //     $set: {
-    //       ...out.state,
-    //       lastId: message.id,
-    //       platform: "whatsapp",
-    //       updatedAt: new Date().toLocaleString("en-US", {
-    //         timeZone: "Asia/Dhaka",
-    //       }),
-    //     },
-    //   },
-    //   { upsert: true },
-    // );
-    // await sendWhatsApp(from, out.text);
-    // === 2. WHATSAPP ===
     const value = body.entry?.[0]?.changes?.[0]?.value;
     const message = value?.messages?.[0];
     if (!message)
@@ -406,14 +346,12 @@ export async function POST(req) {
     // Extract text for ALL types
     let displayText = "";
     let mediaId = null;
-    let mediaMeta = {};
 
     if (message.type === "text") {
       displayText = message.text?.body ?? "";
     } else if (message.type === "image") {
       displayText = message.image?.caption || "📷 ছবি পাঠিয়েছে";
       mediaId = message.image?.id;
-      mediaMeta = { mime: message.image?.mime_type };
     } else if (message.type === "video") {
       displayText = message.video?.caption || "🎥 ভিডিও পাঠিয়েছে";
       mediaId = message.video?.id;
@@ -431,7 +369,7 @@ export async function POST(req) {
     } else if (message.type === "contacts") {
       displayText = `👤 কন্টাক্ট: ${message.contacts?.[0]?.name?.formatted_name}`;
     } else {
-      displayText = `[${message.type}]`;
+      displayText = message.type ? `[${message.type}]` : "মেসেজ";
     }
 
     const { sessionCollection, messageCollection } = await getCollections();
@@ -440,14 +378,62 @@ export async function POST(req) {
     if (session?.lastId === message.id)
       return Response.json({ status: "duplicate" }, { status: 200 });
 
-    // 1. SAVE INCOMING
+    // 1. SAVE INCOMING + CHECK HUMAN MODE
+    const convDoc = await messageCollection.findOne(
+      { waId: from },
+      { projection: { botPausedUntil: 1, botStatus: 1 } },
+    );
+
+    // FIXED CHECK: only botStatus
+    if (convDoc?.botStatus === "human") {
+      console.log(`Bot paused for ${from}, skipping auto reply`);
+      try {
+        const now = new Date();
+        await messageCollection.updateOne(
+          { waId: from },
+          {
+            $set: {
+              waId: from,
+              name: value?.contacts?.[0]?.profile?.name || convDoc?.name || "",
+            },
+            $push: {
+              messages: {
+                messageId: message.id,
+                text: displayText,
+                type: message.type,
+                from: "user",
+                mediaId: mediaId,
+                updatedAt: now,
+              },
+            },
+          },
+          { upsert: true },
+        );
+      } catch (e) {
+        console.error("WA save failed", e);
+      }
+      await sessionCollection.updateOne(
+        { _id: from },
+        {
+          $set: {
+            lastId: message.id,
+            platform: "whatsapp",
+            updatedAt: new Date(),
+          },
+        },
+        { upsert: true },
+      );
+      return Response.json({ status: "paused_for_human" }, { status: 200 });
+    }
+
+    // 2. SAVE INCOMING (bot mode)
     try {
       const now = new Date();
       await messageCollection.updateOne(
         { waId: from },
         {
           $set: { waId: from, name: value?.contacts?.[0]?.profile?.name || "" },
-          $setOnInsert: { botPausedUntil: null, botStatus: "bot" },
+          $setOnInsert: { botStatus: "bot", botPausedUntil: null },
           $push: {
             messages: {
               messageId: message.id,
@@ -465,38 +451,13 @@ export async function POST(req) {
       console.error("WA save failed", e);
     }
 
-    // 2. CHECK IF BOT IS PAUSED FOR MANUAL REPLY
-    const convDoc = await messageCollection.findOne(
-      { waId: from },
-      { projection: { botPausedUntil: 1, botStatus: 1 } },
-    );
-    if (
-      convDoc?.botStatus === "human" &&
-      convDoc?.botPausedUntil &&
-      new Date(convDoc.botPausedUntil) > new Date()
-    ) {
-      console.log(`Bot paused for ${from}, skipping auto reply`);
-      // Save session to avoid duplicate but DON'T auto-reply
-      await sessionCollection.updateOne(
-        { _id: from },
-        {
-          $set: {
-            lastId: message.id,
-            platform: "whatsapp",
-            updatedAt: new Date(),
-          },
-        },
-        { upsert: true },
-      );
-      return Response.json({ status: "paused_for_human" }, { status: 200 });
-    }
-
     const isSessionExpired =
       session?.updatedAt &&
       Date.now() - new Date(session.updatedAt).getTime() > 15 * 60 * 1000;
     const currentSession = isSessionExpired ? { step: null } : session;
 
-    const out = await processLogic(textRaw, currentSession, from);
+    // FIXED: use displayText not textRaw
+    const out = await processLogic(displayText, currentSession, from);
 
     await sessionCollection.updateOne(
       { _id: from },
@@ -512,7 +473,6 @@ export async function POST(req) {
     );
     await sendWhatsApp(from, out.text);
 
-    // 3. SAVE BOT REPLY TOO, so inbox shows full chat
     try {
       await messageCollection.updateOne(
         { waId: from },
