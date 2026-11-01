@@ -25,10 +25,7 @@ const TYPE_LABEL = {
   contacts: "👤 কন্টাক্ট",
   reaction: "রিয়্যাকশন",
 };
-const bodyOf = (m) =>
-  m?.text ||
-  TYPE_LABEL[m?.type] ||
-  (m?.type && m.type !== "text" ? `[${m.type}]` : "");
+const bodyOf = (m) => m?.text || TYPE_LABEL[m?.type] || `[${m.type}]`;
 
 const prettyNumber = (id = "") => {
   const s = String(id);
@@ -333,11 +330,49 @@ const InboxPage = () => {
                           <div
                             className={`max-w-[85%] rounded-lg px-3 py-1.5 shadow-sm sm:max-w-[70%] ${it.m.from === "me" ? "bg-[#d9fdd3] rounded-tr-none" : it.m.from === "bot" ? "bg-[#dcf8c6] rounded-tr-none" : "bg-white rounded-tl-none"}`}
                           >
-                            <p
-                              className={`whitespace-pre-wrap break-words text-[15px] ${it.m.text ? "text-slate-900" : "italic text-slate-500"}`}
-                            >
-                              {bodyOf(it.m) || "—"}
-                            </p>
+                            {/* START IMAGE PREVIEW LOGIC */}
+                            {it.m.mediaId && it.m.type === "image" ? (
+                              <>
+                                <img
+                                  src={`/api/inbox/media?id=${it.m.mediaId}`}
+                                  alt="image"
+                                  className="rounded-lg max-w-[250px] max-h-[300px] object-cover mb-1"
+                                />
+                                {it.m.text &&
+                                  it.m.text !== "📷 ছবি পাঠিয়েছে" && (
+                                    <p className="whitespace-pre-wrap break-words text-[14px] text-slate-900">
+                                      {it.m.text}
+                                    </p>
+                                  )}
+                              </>
+                            ) : it.m.mediaId &&
+                              (it.m.type === "video" ||
+                                it.m.type === "audio" ||
+                                it.m.type === "document") ? (
+                              <>
+                                <a
+                                  href={`/api/inbox/media?id=${it.m.mediaId}`}
+                                  target="_blank"
+                                  className="text-sm text-blue-600 underline"
+                                >
+                                  {it.m.type === "video"
+                                    ? "🎥 ভিডিও দেখুন"
+                                    : it.m.type === "audio"
+                                      ? "🎤 ভয়েস শুনুন"
+                                      : "📄 ডকুমেন্ট দেখুন"}
+                                </a>
+                                <p className="whitespace-pre-wrap break-words text-[14px] mt-1">
+                                  {it.m.text}
+                                </p>
+                              </>
+                            ) : (
+                              <p
+                                className={`whitespace-pre-wrap break-words text-[15px] ${it.m.text ? "text-slate-900" : "italic text-slate-500"}`}
+                              >
+                                {bodyOf(it.m) || "—"}
+                              </p>
+                            )}
+                            {/* END LOGIC */}
                             <p className="mt-0.5 text-right text-[10px] text-slate-500">
                               {it.time} {it.m.from === "me" ? "✓✓" : ""}
                             </p>

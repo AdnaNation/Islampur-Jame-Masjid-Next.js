@@ -404,19 +404,35 @@ export async function POST(req) {
     if (!from) return Response.json({ status: "no_sender" }, { status: 200 });
 
     // Extract text for ALL types
-    let textRaw = "";
-    if (message.type === "text") textRaw = message.text?.body ?? "";
-    else if (message.type === "image") textRaw = message.image?.caption || "";
-    else if (message.type === "video") textRaw = message.video?.caption || "";
-    else if (message.type === "audio" || message.type === "voice") textRaw = "";
-    else if (message.type === "document")
-      textRaw = message.document?.filename || "";
-    else if (message.type === "location")
-      textRaw = `📍 ${message.location?.latitude},${message.location?.longitude}`;
-    else if (message.type === "contacts")
-      textRaw = message.contacts?.[0]?.name?.formatted_name || "";
+    let displayText = "";
+    let mediaId = null;
+    let mediaMeta = {};
 
-    const displayText = textRaw || message.type; // save type if no caption
+    if (message.type === "text") {
+      displayText = message.text?.body ?? "";
+    } else if (message.type === "image") {
+      displayText = message.image?.caption || "📷 ছবি পাঠিয়েছে";
+      mediaId = message.image?.id;
+      mediaMeta = { mime: message.image?.mime_type };
+    } else if (message.type === "video") {
+      displayText = message.video?.caption || "🎥 ভিডিও পাঠিয়েছে";
+      mediaId = message.video?.id;
+    } else if (message.type === "audio" || message.type === "voice") {
+      displayText = "🎤 ভয়েস মেসেজ";
+      mediaId = message.audio?.id || message.voice?.id;
+    } else if (message.type === "document") {
+      displayText = `📄 ${message.document?.filename || "ডকুমেন্ট"}`;
+      mediaId = message.document?.id;
+    } else if (message.type === "sticker") {
+      displayText = "স্টিকার";
+      mediaId = message.sticker?.id;
+    } else if (message.type === "location") {
+      displayText = `📍 লোকেশন: ${message.location?.latitude},${message.location?.longitude}`;
+    } else if (message.type === "contacts") {
+      displayText = `👤 কন্টাক্ট: ${message.contacts?.[0]?.name?.formatted_name}`;
+    } else {
+      displayText = `[${message.type}]`;
+    }
 
     const { sessionCollection, messageCollection } = await getCollections();
 
@@ -438,6 +454,7 @@ export async function POST(req) {
               text: displayText,
               type: message.type,
               from: "user",
+              mediaId: mediaId,
               updatedAt: now,
             },
           },
