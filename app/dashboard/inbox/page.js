@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { MdArrowBack, MdChatBubbleOutline, MdSearch } from "react-icons/md";
+import {
+  MdArrowBack,
+  MdChatBubbleOutline,
+  MdSearch,
+  MdSend,
+  MdPause,
+  MdPlayArrow,
+} from "react-icons/md";
 import useAxiosPublic from "@/hooks/useAxiosPublic";
 import { ChatListSkeleton, ChatThreadSkeleton } from "@/components/Loader";
 
@@ -33,7 +40,7 @@ const titleOf = (c) => c?.name || prettyNumber(c?.waId);
 const toDhaka = (d) =>
   new Date(d.toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
 const dhakaNow = () => toDhaka(new Date());
-const LEGACY = /^\d{1,2}\/\d{1,2}\/\d{4},/; //
+const LEGACY = /^\d{1,2}\/\d{1,2}\/\d{4},/;
 const parse = (v) => {
   if (!v) return null;
   const d = new Date(v);
@@ -72,6 +79,8 @@ const InboxPage = () => {
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(PAGE_SIZE);
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
 
   const {
@@ -96,8 +105,7 @@ const InboxPage = () => {
     );
   }, [conversations, query]);
 
-  // ---- one open conversation ----
-  const { data: thread } = useQuery({
+  const { data: thread, refetch: refetchThread } = useQuery({
     queryKey: ["inboxThread", selectedId, limit],
     queryFn: async () =>
       (
@@ -106,7 +114,7 @@ const InboxPage = () => {
         )
       ).data,
     enabled: !!selectedId,
-    refetchInterval: 5000,
+    refetchInterval: 3000,
     placeholderData: keepPreviousData,
   });
 
@@ -133,7 +141,6 @@ const InboxPage = () => {
     return out;
   }, [messages]);
 
-  // jump to the newest message when a chat opens or a new message arrives
   const lastId = messages?.[messages.length - 1]?.messageId;
   useEffect(() => {
     const el = scrollRef.current;
@@ -143,20 +150,50 @@ const InboxPage = () => {
   const openChat = (id) => {
     setSelectedId(id);
     setLimit(PAGE_SIZE);
+    setReply("");
   };
 
   const selected =
     conversations.find((c) => c.waId === selectedId) ||
     (thread ? { waId: thread.waId, name: thread.name } : null);
 
+  const isHuman = thread?.botStatus === "human";
+
+  const sendReply = async () => {
+    if (!reply.trim() || !selectedId || sending) return;
+    setSending(true);
+    try {
+      await axiosPublic.post("/inbox", {
+        waId: selectedId,
+        text: reply.trim(),
+      });
+      setReply("");
+      setTimeout(() => refetchThread(), 500);
+    } catch (e) {
+      alert("পাঠানো যায়নি: " + (e.response?.data?.error || e.message));
+    }
+    setSending(false);
+  };
+
+  const toggleBot = async () => {
+    if (!selectedId) return;
+    try {
+      await axiosPublic.put("/inbox", {
+        waId: selectedId,
+        action: isHuman ? "resume" : "pause",
+      });
+      refetchThread();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="p-2 sm:p-4">
       <div className="flex h-[calc(100vh-9rem)] min-h-[480px] overflow-hidden bg-white border shadow-sm rounded-xl border-slate-200">
-        {/* ---------- left: conversations ---------- */}
+        {/* left */}
         <aside
-          className={`${
-            selectedId ? "hidden md:flex" : "flex"
-          } w-full flex-col border-r border-slate-200 md:w-80 lg:w-96 md:shrink-0`}
+          className={`${selectedId ? "hidden md:flex" : "flex"} w-full flex-col border-r border-slate-200 md:w-80 lg:w-96 md:shrink-0`}
         >
           <div className="p-3 border-b border-slate-200">
             <h1 className="text-lg font-bold text-[#0f3d2e]">
@@ -173,7 +210,6 @@ const InboxPage = () => {
               />
             </div>
           </div>
-
           <div className="flex-1 overflow-y-auto">
             {isPending ? (
               <ChatListSkeleton />
@@ -194,9 +230,7 @@ const InboxPage = () => {
                   <li key={c.waId}>
                     <button
                       onClick={() => openChat(c.waId)}
-                      className={`flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-slate-50 ${
-                        selectedId === c.waId ? "bg-emerald-50" : ""
-                      }`}
+                      className={`flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-slate-50 ${selectedId === c.waId ? "bg-emerald-50" : ""}`}
                     >
                       <Avatar c={c} />
                       <span className="flex-1 min-w-0">
@@ -220,11 +254,9 @@ const InboxPage = () => {
           </div>
         </aside>
 
-        {/* ---------- right: open conversation ---------- */}
+        {/* right */}
         <section
-          className={`${
-            selectedId ? "flex" : "hidden md:flex"
-          } min-w-0 flex-1 flex-col bg-[#efeae2]`}
+          className={`${selectedId ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col bg-[#efeae2]`}
         >
           {!selectedId ? (
             <div className="flex flex-col items-center justify-center flex-1 text-slate-400">
@@ -237,20 +269,38 @@ const InboxPage = () => {
                 <button
                   onClick={() => setSelectedId(null)}
                   className="p-1 text-2xl md:hidden text-slate-600"
-                  aria-label="ফিরে যান"
                 >
                   <MdArrowBack />
                 </button>
                 {selected && <Avatar c={selected} />}
-                <div className="min-w-0">
+                <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate text-slate-900">
                     {titleOf(selected)}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {prettyNumber(selectedId)}
-                    {thread?.total ? ` • মোট ${thread.total} টি মেসেজ` : ""}
+                    {prettyNumber(selectedId)}{" "}
+                    {thread?.total ? `• মোট ${thread.total} টি` : ""}{" "}
+                    {isHuman && (
+                      <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">
+                        Human Mode
+                      </span>
+                    )}
                   </p>
                 </div>
+                <button
+                  onClick={toggleBot}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 ${isHuman ? "bg-emerald-600 text-white" : "bg-orange-500 text-white"}`}
+                >
+                  {isHuman ? (
+                    <>
+                      <MdPlayArrow /> Resume Bot
+                    </>
+                  ) : (
+                    <>
+                      <MdPause /> Take Over
+                    </>
+                  )}
+                </button>
               </header>
 
               <div ref={scrollRef} className="flex-1 px-3 py-4 overflow-y-auto">
@@ -264,7 +314,6 @@ const InboxPage = () => {
                     </button>
                   </div>
                 )}
-
                 {!thread ? (
                   <ChatThreadSkeleton />
                 ) : (
@@ -277,19 +326,20 @@ const InboxPage = () => {
                           </span>
                         </li>
                       ) : (
-                        <li key={it.key} className="flex">
-                          <div className="max-w-[85%] rounded-lg rounded-tl-none bg-white px-3 py-1.5 shadow-sm sm:max-w-[70%]">
+                        <li
+                          key={it.key}
+                          className={`flex ${it.m.from === "me" || it.m.from === "bot" ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-[85%] rounded-lg px-3 py-1.5 shadow-sm sm:max-w-[70%] ${it.m.from === "me" ? "bg-[#d9fdd3] rounded-tr-none" : it.m.from === "bot" ? "bg-[#dcf8c6] rounded-tr-none" : "bg-white rounded-tl-none"}`}
+                          >
                             <p
-                              className={`whitespace-pre-wrap break-words text-[15px] ${
-                                it.m.text
-                                  ? "text-slate-900"
-                                  : "italic text-slate-500"
-                              }`}
+                              className={`whitespace-pre-wrap break-words text-[15px] ${it.m.text ? "text-slate-900" : "italic text-slate-500"}`}
                             >
                               {bodyOf(it.m) || "—"}
                             </p>
-                            <p className="mt-0.5 text-right text-[10px] text-slate-400">
-                              {it.time}
+                            <p className="mt-0.5 text-right text-[10px] text-slate-500">
+                              {it.time} {it.m.from === "me" ? "✓✓" : ""}
                             </p>
                           </div>
                         </li>
@@ -298,6 +348,30 @@ const InboxPage = () => {
                   </ul>
                 )}
               </div>
+
+              {/* REPLY BOX */}
+              <footer className="flex items-center gap-2 p-2 bg-white border-t border-slate-200">
+                <input
+                  type="text"
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendReply();
+                    }
+                  }}
+                  placeholder="মেসেজ লিখুন..."
+                  className="flex-1 px-4 py-2.5 text-[15px] border rounded-full border-slate-300 focus:border-[#0f3d2e] focus:outline-none"
+                />
+                <button
+                  onClick={sendReply}
+                  disabled={sending || !reply.trim()}
+                  className="flex items-center justify-center w-10 h-10 text-white rounded-full bg-[#0f3d2e] disabled:opacity-50"
+                >
+                  <MdSend className="text-xl" />
+                </button>
+              </footer>
             </>
           )}
         </section>
