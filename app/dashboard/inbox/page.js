@@ -123,7 +123,6 @@ const InboxPage = () => {
       if ("Notification" in window && Notification.permission === "granted") {
         new Notification(`নতুন মেসেজ: ${titleOf(latest)}`, {
           body: bodyOf(latest.last),
-          icon: "/logo.jpg",
         });
       }
 
