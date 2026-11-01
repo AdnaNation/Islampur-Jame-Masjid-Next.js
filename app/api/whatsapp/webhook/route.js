@@ -359,6 +359,7 @@ export async function POST(req) {
           $set: { waId: from, name: value?.contacts?.[0]?.profile?.name || "" },
           $push: {
             messages: {
+              message,
               messageId: message.id,
               text: textRaw,
               type: message.type,
