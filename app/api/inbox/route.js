@@ -9,6 +9,7 @@ const slim = (m) => ({
   text: m?.text || "",
   type: m?.type || "text",
   from: m?.from || "user",
+  mediaId: m?.mediaId || null,
   updatedAt: timeOf(m),
 });
 

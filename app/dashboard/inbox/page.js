@@ -330,7 +330,6 @@ const InboxPage = () => {
                           <div
                             className={`max-w-[85%] rounded-lg px-3 py-1.5 shadow-sm sm:max-w-[70%] ${it.m.from === "me" ? "bg-[#d9fdd3] rounded-tr-none" : it.m.from === "bot" ? "bg-[#dcf8c6] rounded-tr-none" : "bg-white rounded-tl-none"}`}
                           >
-                            {/* START IMAGE PREVIEW LOGIC */}
                             {it.m.mediaId && it.m.type === "image" ? (
                               <>
                                 <img
@@ -346,8 +345,20 @@ const InboxPage = () => {
                                   )}
                               </>
                             ) : it.m.mediaId &&
+                              (it.m.type === "audio" ||
+                                it.m.type === "voice") ? (
+                              <>
+                                <audio
+                                  controls
+                                  src={`/api/inbox/media?id=${it.m.mediaId}`}
+                                  className="w-[240px] mb-1"
+                                />
+                                <p className="whitespace-pre-wrap break-words text-[14px] mt-1">
+                                  {it.m.text}
+                                </p>
+                              </>
+                            ) : it.m.mediaId &&
                               (it.m.type === "video" ||
-                                it.m.type === "audio" ||
                                 it.m.type === "document") ? (
                               <>
                                 <a
@@ -357,9 +368,7 @@ const InboxPage = () => {
                                 >
                                   {it.m.type === "video"
                                     ? "🎥 ভিডিও দেখুন"
-                                    : it.m.type === "audio"
-                                      ? "🎤 ভয়েস শুনুন"
-                                      : "📄 ডকুমেন্ট দেখুন"}
+                                    : "📄 ডকুমেন্ট দেখুন"}
                                 </a>
                                 <p className="whitespace-pre-wrap break-words text-[14px] mt-1">
                                   {it.m.text}
@@ -372,7 +381,6 @@ const InboxPage = () => {
                                 {bodyOf(it.m) || "—"}
                               </p>
                             )}
-                            {/* END LOGIC */}
                             <p className="mt-0.5 text-right text-[10px] text-slate-500">
                               {it.time} {it.m.from === "me" ? "✓✓" : ""}
                             </p>
