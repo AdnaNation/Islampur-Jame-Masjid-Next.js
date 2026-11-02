@@ -79,14 +79,6 @@ const InboxPage = () => {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
-  const prevLastIdRef = useRef(null);
-
-  // Request notification permission on load
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
 
   const {
     data: conversations = [],
@@ -99,41 +91,6 @@ const InboxPage = () => {
     refetchInterval: 5000,
     placeholderData: keepPreviousData,
   });
-
-  useEffect(() => {
-    if (!conversations.length) return;
-    const latest = conversations[0];
-    const latestId = latest?.last?.messageId || latest?.waId;
-    const latestTime = new Date(
-      latest?.last?.updatedAt || latest?.lastMessageAt || 0,
-    ).getTime();
-    const isNew = prevLastIdRef.current && prevLastIdRef.current !== latestId;
-    const isRecent = Date.now() - latestTime < 15000; // within 15 sec
-    const isFromUser = latest?.last?.from === "user";
-
-    if (isNew && isRecent && isFromUser) {
-      // Sound
-      const audio = new Audio(
-        "https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3",
-      );
-      audio.volume = 0.7;
-      audio.play().catch(() => {});
-
-      // Browser notification
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(`নতুন মেসেজ: ${titleOf(latest)}`, {
-          body: bodyOf(latest.last),
-        });
-      }
-
-      // Title blink
-      const originalTitle = document.title;
-      document.title = `🔔 নতুন মেসেজ - ${titleOf(latest)}`;
-      setTimeout(() => (document.title = originalTitle), 5000);
-    }
-
-    if (latestId) prevLastIdRef.current = latestId;
-  }, [conversations]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
