@@ -35,6 +35,8 @@ const API_SKIP = [
   "/api/whatsapp",
   "/api/sms-db",
   "/api/notices/files",
+  "/api/admins",
+  "/api/auth/change-password",
 ];
 const API_MAX_ENTRIES = 300;
 

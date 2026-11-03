@@ -64,6 +64,6 @@ export async function POST(request) {
     admin: admin.admin === true,
     moderator: admin.moderator === true,
   });
-  res.cookies.set(sessionCookie(signSession(number)));
+  res.cookies.set(sessionCookie(signSession(number, admin.sv ?? 0)));
   return res;
 }

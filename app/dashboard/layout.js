@@ -11,6 +11,7 @@ import {
   MdClose,
   MdForum,
   MdLink,
+  MdManageAccounts,
   MdMenu,
   MdMenuBook,
   MdPayments,
@@ -65,6 +66,16 @@ const MENU = [
     title: "সদস্য",
     items: [
       { href: "/dashboard/addUser", label: "অ্যাড ইউজার", Icon: MdPersonAdd },
+    ],
+  },
+  {
+    title: "ব্যবস্থাপনা",
+    items: [
+      {
+        href: "/dashboard/admins",
+        label: "অ্যাডমিন ও মডারেটর",
+        Icon: MdManageAccounts,
+      },
     ],
   },
 ];
