@@ -6,6 +6,8 @@ import {
   validDate,
   memberFeeSummary,
   mergeMemberRow,
+  rentIncomeSummary,
+  mergeRentRow,
   openingAt,
 } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
@@ -24,7 +26,7 @@ export async function GET(request) {
   const fromYmd = sp.get("from");
   const toYmd = sp.get("to");
   const { transactionCollection } = await getAccountCollections();
-  const [grouped, member, opening] = await Promise.all([
+  const [grouped, member, rent, opening] = await Promise.all([
     transactionCollection
       .aggregate([
         { $match: { date: { $gte: from, $lte: to } } },
@@ -38,6 +40,7 @@ export async function GET(request) {
       ])
       .toArray(),
     memberFeeSummary(fromYmd, toYmd),
+    rentIncomeSummary(fromYmd, toYmd),
     openingAt(fromYmd),
   ]);
 
@@ -48,7 +51,10 @@ export async function GET(request) {
     grouped
       .filter((g) => g._id.type === type)
       .map((g) => ({ name: g.name, total: r2(g.total) }));
-  const income = mergeMemberRow(rows("income"), member.total);
+  const income = mergeRentRow(
+    mergeMemberRow(rows("income"), member.total),
+    rent.total,
+  );
   const expense = rows("expense");
 
   return NextResponse.json({
@@ -63,5 +69,6 @@ export async function GET(request) {
       due: member.due,
       total: member.total,
     },
+    rentIncome: { monthly: rent.monthly, due: rent.due, total: rent.total },
   });
 }

@@ -9,6 +9,8 @@ import {
   cleanAmount,
   memberFeeSummary,
   MEMBER_CATEGORY,
+  rentIncomeSummary,
+  RENT_CATEGORY,
   openingAt,
 } from "@/lib/accounts";
 import { withIdempotency } from "@/lib/idempotency";
@@ -36,7 +38,7 @@ export async function GET(request) {
 
   const withMembers = type !== "expense" && !match.categoryId;
   const { transactionCollection } = await getAccountCollections();
-  const [items, grouped, member, opening] = await Promise.all([
+  const [items, grouped, member, rent, opening] = await Promise.all([
     transactionCollection
       .find(match)
       .sort({ date: -1, createdAt: -1 })
@@ -54,8 +56,15 @@ export async function GET(request) {
         },
       ])
       .toArray(),
+
     withMembers
       ? memberFeeSummary(sp.get("from") || undefined, sp.get("to") || undefined)
+      : null,
+    withMembers
+      ? rentIncomeSummary(
+          sp.get("from") || undefined,
+          sp.get("to") || undefined,
+        )
       : null,
     validDate(from) ? openingAt(sp.get("from")) : null,
   ]);
@@ -102,6 +111,24 @@ export async function GET(request) {
       });
     }
     income += member.total;
+    byCategory.sort((a, b) => b.total - a.total);
+  }
+
+  if (rent && rent.total > 0) {
+    const detail = [
+      rent.monthly > 0 && `মাসিক ভাড়া ${rent.monthly}`,
+      rent.due > 0 && `বকেয়া ${rent.due}`,
+    ]
+      .filter(Boolean)
+      .join(" • ");
+    byCategory.push({
+      type: "income",
+      name: RENT_CATEGORY,
+      total: rent.total,
+      count: rent.count,
+      detail,
+    });
+    income += rent.total;
     byCategory.sort((a, b) => b.total - a.total);
   }
 

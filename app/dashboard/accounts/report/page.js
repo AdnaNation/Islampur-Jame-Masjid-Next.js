@@ -173,6 +173,13 @@ function ReportView() {
             {amt(data.memberFees.total)}
           </p>
         )}
+        {data?.rentIncome?.total > 0 && (
+          <p className="text-xs text-center text-slate-500">
+            “দোকান ভাড়া থেকে আয়” লাইনে দোকান ভাড়ার পেমেন্ট নিজে থেকেই যোগ হয়
+            (বাতিল করা বাদে): মাসিক ভাড়া {amt(data.rentIncome.monthly)} +
+            বকেয়া {amt(data.rentIncome.due)} = {amt(data.rentIncome.total)}
+          </p>
+        )}
 
         {ready && report && (
           <LedgerActions
