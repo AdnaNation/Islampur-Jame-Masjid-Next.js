@@ -87,6 +87,7 @@ export default function OfflineProvider() {
     idle(() => {
       if (!navigator.onLine) return;
       import("@/components/fee/FeeDetailsModal").catch(() => {});
+      import("@/components/rent/RentDetailsModal").catch(() => {});
       import("html-to-image").catch(() => {});
     });
   }, [flush, reload]);
