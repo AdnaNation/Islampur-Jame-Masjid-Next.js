@@ -19,6 +19,7 @@ import {
   MdSms,
   MdSpaceDashboard,
   MdStorefront,
+  MdTrendingUp,
 } from "react-icons/md";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -66,6 +67,11 @@ const MENU = [
     title: "সদস্য",
     items: [
       { href: "/dashboard/addUser", label: "অ্যাড ইউজার", Icon: MdPersonAdd },
+      {
+        href: "/dashboard/fee-rate",
+        label: "চাঁদার হার পরিবর্তন",
+        Icon: MdTrendingUp,
+      },
     ],
   },
   {
