@@ -23,7 +23,7 @@ export async function PATCH(request) {
       return NextResponse.json({ error: "বছর বন্ধের তথ্য পাওয়া যায়নি" }, { status: 409 });
     }
 
-    const result = await userCollection.updateMany({}, [
+    const result = await userCollection.updateMany({ closedYear: { $ne: closingYear } }, [
       {
         $set: {
           unpaidCount: {
@@ -93,14 +93,11 @@ export async function PATCH(request) {
             },
           },
           "Tarabi.status": "unpaid",
+          closedYear: closingYear,
         },
       },
       { $unset: "unpaidCount" },
     ]);
-
-    if (result.matchedCount === 0) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
-    }
 
     let advanceUsed = 0;
     let advanceFailed = false;
