@@ -39,6 +39,12 @@ const TYPE_META = {
     chip: "bg-rose-50 text-rose-600",
     amount: "text-rose-700",
   },
+  Advance: {
+    Icon: MdPayments,
+    bar: "from-violet-500 to-violet-300",
+    chip: "bg-violet-50 text-violet-600",
+    amount: "text-violet-700",
+  },
 };
 const FALLBACK_META = {
   Icon: MdPayments,
@@ -144,6 +150,7 @@ const PaymentHistory = () => {
       return `${history.monthName ? history.monthName + "'র " : ""}মাসিক চাঁদা`;
     if (history.type === "Tarabi") return "তারাবীর চাঁদা";
     if (history.type === "Due") return "বকেয়া চাঁদা";
+    if (history.type === "Advance") return "অগ্রিম চাঁদা";
     return "";
   };
 
@@ -441,7 +448,8 @@ const PaymentHistory = () => {
                       </small>{" "}
                       {history.type === "Monthly" && "মাসের মাসিক চাঁদা"}
                       {history.type === "Tarabi" && "তারাবীর"}{" "}
-                      {history.type === "Due" && "বকেয়ার"}{" "}
+                      {history.type === "Due" && "বকেয়ার"}
+                      {history.type === "Advance" && "অগ্রিম চাঁদা বাবদ"}{" "}
                       <b className={`text-lg ${meta.amount}`}>
                         {history.fee} টাকা
                       </b>{" "}
