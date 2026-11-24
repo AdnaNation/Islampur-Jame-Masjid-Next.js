@@ -7,10 +7,10 @@ export async function GET(request, { params }) {
   if (denied) return denied;
   const { id, year } = await params;
   const yearNum = parseInt(year);
-  const { paymentCollection } = await getCollections();
-  const result = await paymentCollection
-    .aggregate([
-      { $match: { userId: id, year: yearNum } },
+  const { paymentCollection, advanceUseCollection } = await getCollections();
+  const [result, advanceResult] = await Promise.all([
+    paymentCollection.aggregate([
+      { $match: { userId: id, year: yearNum, reverted: { $ne: true } } },
       {
         $addFields: { feeNumber: { $toDouble: "$fee" } },
       },
@@ -20,7 +20,25 @@ export async function GET(request, { params }) {
           totalFee: { $sum: "$feeNumber" },
         },
       },
-    ])
-    .toArray();
-  return NextResponse.json({ totalPaid: result[0]?.totalFee || 0 });
+    ]).toArray(),
+    advanceUseCollection.aggregate([
+      { $match: { userId: id, year: yearNum } },
+      {
+        $group: {
+          _id: null,
+          total: {
+            $sum: {
+              $add: [
+                { $ifNull: ["$dueUsed", 0] },
+                { $ifNull: ["$monthsUsed", 0] },
+              ],
+            },
+          },
+        },
+      },
+    ]).toArray(),
+  ]);
+  return NextResponse.json({
+    totalPaid: (result[0]?.totalFee || 0) + (advanceResult[0]?.total || 0),
+  });
 }
