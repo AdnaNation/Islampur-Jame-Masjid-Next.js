@@ -259,12 +259,14 @@ const AdminDashboard = () => {
           }
         }
 
-        const act = await axiosPublic.patch("/activity");
-        if (act.data.modifiedCount > 0) refetch();
       }
 
-      // 4) start the new year
-      if (!advanceFailed) await axiosPublic.patch("/next-year");
+      // Only advance the year after every member's advance allocation succeeds.
+      if (!advanceFailed) {
+        const act = await axiosPublic.patch("/activity");
+        if (act.data.modifiedCount > 0) refetch();
+        await axiosPublic.patch("/next-year");
+      }
     } finally {
       setLoading2(false);
     }
