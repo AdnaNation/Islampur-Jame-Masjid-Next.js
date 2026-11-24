@@ -33,7 +33,7 @@ async function createCombinedPayment(request) {
     );
   }
 
-  // re-build the three parts from validated values only
+  // Rebuild all payment parts from validated values only.
   let monthly = null;
   let tarabi = null;
   let due = null;
@@ -66,7 +66,9 @@ async function createCombinedPayment(request) {
 
   const when = actionTime(request);
   const time = when.toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
-  const year = when.getFullYear();
+  const year = Number(
+    when.toLocaleString("en-US", { timeZone: "Asia/Dhaka", year: "numeric" }),
+  );
   const messageParts = [];
   const slipItems = [];
 
