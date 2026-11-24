@@ -73,15 +73,55 @@ export async function PATCH(request, { params }) {
           error.status = 409;
           throw error;
         }
-        const taken = await userCollection.updateOne(
-          { ...userQuery, Advance: { $gte: fee } },
-          { $inc: { Advance: -fee } },
-          { session },
-        );
-        if (!taken.matchedCount) {
-          const error = new Error("এই অগ্রিমের টাকা ইতিমধ্যে ব্যবহার হয়ে গেছে, তাই বাতিল করা যাবে না");
-          error.status = 409;
-          throw error;
+        const currentUser = await userCollection.findOne(userQuery, { session });
+        const lots = Array.isArray(currentUser?.AdvanceLots)
+          ? currentUser.AdvanceLots
+          : null;
+        if (lots) {
+          const lotIndex = lots.findIndex(
+            (lot) => String(lot.paymentId || "") === id,
+          );
+          const lot = lotIndex >= 0 ? lots[lotIndex] : null;
+          if (!lot || Number(lot.remaining) + 1e-8 < fee) {
+            const error = new Error("এই অগ্রিমের টাকা ইতিমধ্যে ব্যবহার হয়ে গেছে, তাই বাতিল করা যাবে না");
+            error.status = 409;
+            throw error;
+          }
+          const nextLots = lots
+            .map((item, index) =>
+              index === lotIndex
+                ? {
+                    ...item,
+                    remaining: Math.round((Number(item.remaining) - fee) * 100) / 100,
+                  }
+                : item,
+            )
+            .filter((item) => Number(item.remaining) > 0);
+          const taken = await userCollection.updateOne(
+            { ...userQuery, Advance: { $gte: fee } },
+            {
+              $inc: { Advance: -fee },
+              $set: { AdvanceLots: nextLots },
+            },
+            { session },
+          );
+          if (!taken.matchedCount) {
+            const error = new Error("এই অগ্রিমের টাকা ইতিমধ্যে ব্যবহার হয়ে গেছে, তাই বাতিল করা যাবে না");
+            error.status = 409;
+            throw error;
+          }
+        } else {
+          // Legacy advance balances created before receipt-level tracking.
+          const taken = await userCollection.updateOne(
+            { ...userQuery, Advance: { $gte: fee } },
+            { $inc: { Advance: -fee } },
+            { session },
+          );
+          if (!taken.matchedCount) {
+            const error = new Error("এই অগ্রিমের টাকা ইতিমধ্যে ব্যবহার হয়ে গেছে, তাই বাতিল করা যাবে না");
+            error.status = 409;
+            throw error;
+          }
         }
         result = await paymentCollection.updateOne(
           { _id: new ObjectId(id), reverted: { $ne: true } },
