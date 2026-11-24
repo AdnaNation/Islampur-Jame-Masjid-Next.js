@@ -147,6 +147,7 @@ export async function PATCH(request) {
               {
                 $set: {
                   Advance: plan.newAdvance,
+                  AdvanceLots: plan.advanceLots,
                   Due: plan.newDue,
                   PayMonths: nextPayMonths,
                   lastAdvanceCloseYear: closingYear,
@@ -172,6 +173,7 @@ export async function PATCH(request) {
                 months: plan.months,
                 monthsUsed: plan.monthsUsed,
                 advanceLeft: plan.newAdvance,
+                lotUses: plan.lotUses,
                 at: new Date(),
               },
               { session },
