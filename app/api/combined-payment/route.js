@@ -144,12 +144,8 @@ async function createCombinedPayment(request) {
     let paid;
     try {
       await session.withTransaction(async () => {
-        const updated = await userCollection.updateOne(
-          userQuery,
-          { $inc: { Advance: Number(advance.amount) } },
-          { session },
-        );
-        if (!updated.matchedCount) throw new Error("Member not found for advance");
+        const current = await userCollection.findOne(userQuery, { session });
+        if (!current) throw new Error("Member not found for advance");
         paid = await paymentCollection.insertOne({
           userId,
           name,
@@ -159,6 +155,42 @@ async function createCombinedPayment(request) {
           time,
           year,
         }, { session });
+
+        const existingLots = Array.isArray(current.AdvanceLots)
+          ? current.AdvanceLots.filter((lot) => Number(lot.remaining) > 0)
+          : [];
+        const tracked = existingLots.reduce(
+          (sum, lot) => sum + (Number(lot.remaining) || 0),
+          0,
+        );
+        const currentAdvance = Number(current.Advance) || 0;
+        const lots = [...existingLots];
+        if (tracked < currentAdvance) {
+          const legacy = Math.round((currentAdvance - tracked) * 100) / 100;
+          lots.unshift({
+            paymentId: null,
+            amount: legacy,
+            remaining: legacy,
+            legacy: true,
+          });
+        }
+        lots.push({
+          paymentId: String(paid.insertedId),
+          amount: advance.amount,
+          remaining: advance.amount,
+          receivedAt: when,
+        });
+        const updated = await userCollection.updateOne(
+          userQuery,
+          {
+            $set: {
+              Advance: Math.round((currentAdvance + Number(advance.amount)) * 100) / 100,
+              AdvanceLots: lots,
+            },
+          },
+          { session },
+        );
+        if (!updated.matchedCount) throw new Error("Member not found for advance");
       });
     } finally {
       await session.endSession();
