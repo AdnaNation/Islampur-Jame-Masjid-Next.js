@@ -39,5 +39,6 @@ export async function GET(request) {
     Tarabi: mapped.Tarabi || { _id: "Tarabi", totalAmount: 0 },
     Monthly: mapped.Monthly || { _id: "Monthly", totalAmount: 0 },
     Due: mapped.Due || { _id: "Due", totalAmount: 0 },
+    Advance: mapped.Advance || { _id: "Advance", totalAmount: 0 },
   });
 }
