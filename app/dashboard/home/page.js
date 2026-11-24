@@ -7,6 +7,7 @@ import {
   MdAssistantDirection,
   MdCalendarMonth,
   MdMoneyOff,
+  MdPayments,
   MdNightsStay,
   MdOutlineToggleOff,
   MdOutlineToggleOn,
@@ -104,8 +105,9 @@ const AdminDashboard = () => {
     Math.floor(totalPayment?.data?.Monthly?.totalAmount) || 0;
   const tarabiTotal = Math.floor(totalPayment?.data?.Tarabi?.totalAmount) || 0;
   const dueTotal = Math.floor(totalPayment?.data?.Due?.totalAmount) || 0;
+  const advanceTotal = Math.floor(totalPayment?.data?.Advance?.totalAmount) || 0;
 
-  const total = monthlyTotal + tarabiTotal + dueTotal;
+  const total = monthlyTotal + tarabiTotal + dueTotal + advanceTotal;
 
   const smsHandle = () => {
     setLoading(true);
@@ -207,10 +209,12 @@ const AdminDashboard = () => {
     setLoading2(true);
     const failedSms = [];
     const failedWhatsapp = [];
+    let advanceFailed = false;
 
     try {
       // 1) close the year for every member
       const closeRes = await axiosPublic.patch("/closing-year");
+      advanceFailed = closeRes.data?.advanceFailed === true;
 
       if (closeRes.data.modifiedCount > 0) {
         const numbers = allNumber[0].map((n) => n.Number);
@@ -260,16 +264,25 @@ const AdminDashboard = () => {
       }
 
       // 4) start the new year
-      await axiosPublic.patch("/next-year");
+      if (!advanceFailed) await axiosPublic.patch("/next-year");
     } finally {
       setLoading2(false);
     }
 
-    if (failedSms.length || failedWhatsapp.length) {
+    if (advanceFailed || failedSms.length || failedWhatsapp.length) {
       Swal.fire({
-        icon: "info",
-        title: "কিছু মেসেজ যায়নি",
-        text: `SMS যায়নি: ${failedSms.length} জন, WhatsApp যায়নি: ${failedWhatsapp.length} জন (WhatsApp নেই বা নাম্বার ভুল হতে পারে)।`,
+        icon: advanceFailed ? "warning" : "info",
+        title: advanceFailed
+          ? "অগ্রিম সমন্বয় সম্পূর্ণ হয়নি"
+          : "কিছু মেসেজ যায়নি",
+        text: [
+          advanceFailed
+            ? "বছর বন্ধের মূল হিসাব সংরক্ষিত হয়েছে, কিন্তু কিছু সদস্যের অগ্রিম সমন্বয় ব্যর্থ হয়েছে। নতুন বছর শুরু করা হয়নি; আবার চেষ্টা করুন।"
+            : "",
+          failedSms.length || failedWhatsapp.length
+            ? `SMS যায়নি: ${failedSms.length} জন, WhatsApp যায়নি: ${failedWhatsapp.length} জন (WhatsApp নেই বা নাম্বার ভুল হতে পারে)।`
+            : "",
+        ].filter(Boolean).join(" "),
       });
     }
   };
@@ -334,6 +347,10 @@ const AdminDashboard = () => {
             className="bg-amber-400"
             style={{ width: `${(tarabiTotal / (total || 1)) * 100}%` }}
           />
+          <div
+            className="bg-violet-400"
+            style={{ width: `${(advanceTotal / (total || 1)) * 100}%` }}
+          />
         </div>
         <div className="flex flex-wrap mt-3 text-xs gap-x-4 gap-y-1 text-white/80">
           <span className="flex items-center gap-1">
@@ -348,11 +365,15 @@ const AdminDashboard = () => {
             <i className="w-2 h-2 rounded-full bg-amber-400" />
             তারাবী {pct(tarabiTotal)}%
           </span>
+          <span className="flex items-center gap-1">
+            <i className="w-2 h-2 rounded-full bg-violet-400" />
+            অগ্রিম {pct(advanceTotal)}%
+          </span>
         </div>
       </div>
 
       {/* Breakdown */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <StatCard
           title="মাসিক চাঁদা"
           value={monthlyTotal}
@@ -373,6 +394,13 @@ const AdminDashboard = () => {
           Icon={MdNightsStay}
           border="border-amber-500"
           chip="bg-amber-50 text-amber-600"
+        />
+        <StatCard
+          title="অগ্রিম চাঁদা"
+          value={advanceTotal}
+          Icon={MdPayments}
+          border="border-violet-500"
+          chip="bg-violet-50 text-violet-600"
         />
       </div>
 
