@@ -18,10 +18,10 @@ Next.js 15 (App Router) · React · Tailwind CSS · MongoDB · React Query · JW
 
 ## Automatic advance adjustment
 
-- Advance is automatically applied to the current month's unpaid monthly fee on the 1st of each month (Bangladesh time).
+- Advance is automatically applied to the current month's unpaid monthly fee from the 1st of each month (Bangladesh time). The daily scheduled check retries safely if the new year has not yet been opened or a previous run failed.
 - If the balance is smaller than the monthly fee, the month stores a partial advance payment and only the remaining amount stays due.
 - Unused advance remains on the member account and carries into following months and across year boundaries. For example, ৳250 can cover December (৳100), January (৳100), and ৳50 toward February.
-- The scheduled endpoint is `/api/cron/monthly-advance`. Vercel runs it daily at 18:00 UTC; the endpoint performs work only when the date in Asia/Dhaka is the 1st.
+- The scheduled endpoint is `/api/cron/monthly-advance`. Vercel runs it daily at 18:00 UTC (midnight in Bangladesh). The endpoint checks the current Dhaka month, waits until the year-closing workflow has opened that year, and uses a unique year/month/member record to prevent duplicate deductions.
 
 ### Deployment setting
 
