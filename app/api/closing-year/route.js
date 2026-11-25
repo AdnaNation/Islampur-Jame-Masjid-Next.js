@@ -27,11 +27,47 @@ export async function PATCH(request) {
       {
         $set: {
           unpaidCount: {
-            $size: {
-              $filter: {
-                input: "$PayMonths",
-                as: "m",
-                cond: { $eq: ["$$m.status", "unpaid"] },
+            $reduce: {
+              input: { $ifNull: ["$PayMonths", []] },
+              initialValue: 0,
+              in: {
+                $add: [
+                  "$value",
+                  {
+                    $cond: [
+                      { $eq: ["$this.status", "unpaid"] },
+                      1,
+                      {
+                        $cond: [
+                          { $eq: ["$this.status", "partial"] },
+                          {
+                            $cond: [
+                              { $gt: [{ $toDouble: "$FeeRate" }, 0] },
+                              {
+                                $divide: [
+                                  {
+                                    $max: [
+                                      0,
+                                      {
+                                        $subtract: [
+                                          { $toDouble: "$FeeRate" },
+                                          { $convert: { input: "$this.paidAmount", to: "double", onError: 0, onNull: 0 } },
+                                        ],
+                                      },
+                                    ],
+                                  },
+                                  { $toDouble: "$FeeRate" },
+                                ],
+                              },
+                              0,
+                            ],
+                          },
+                          0,
+                        ],
+                      },
+                    ],
+                  },
+                ],
               },
             },
           },
