@@ -102,6 +102,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
   const [payDueInput, setPayDueInput] = useState("");
   const [advInput, setAdvInput] = useState("");
   const [advDialogInput, setAdvDialogInput] = useState("");
+  const [manualAdvance, setManualAdvance] = useState({});
   const [dialog, setDialog] = useState(null);
   const [showBreak, setShowBreak] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -302,6 +303,39 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
       done(res?.data?.queued ? QUEUED_TEXT : "অগ্রিম জমা হয়েছে");
     });
 
+  const openManualAdvance = () => {
+    const initial = {};
+    pm.filter((month) => month.status !== "paid").forEach((month) => {
+      initial[month.monthName] = {
+        selected: false,
+        amount: String(monthOutstanding(month)),
+      };
+    });
+    setManualAdvance(initial);
+    setDialog({ type: "manualAdvance" });
+  };
+
+  const allocateAdvance = () =>
+    run(async () => {
+      const allocations = Object.entries(manualAdvance)
+        .filter(([, value]) => value.selected)
+        .map(([month, value]) => ({ month, amount: Number(value.amount) }));
+      if (!allocations.length || allocations.some((item) => !(item.amount > 0))) {
+        return flash("সমন্বয়ের জন্য মাস ও সঠিক টাকার পরিমাণ নির্বাচন করুন", false);
+      }
+      const total = allocations.reduce((sum, item) => sum + item.amount, 0);
+      if (total > advanceBalance + 0.009) {
+        return flash("সমন্বয়ের পরিমাণ অগ্রিম ব্যালেন্সের চেয়ে বেশি", false);
+      }
+      const res = await axiosPublic.post("/advance/allocate", {
+        userId: u._id,
+        allocations,
+      });
+      if (res.data.success) {
+        done(`৳${res.data.used} অগ্রিম সমন্বয় হয়েছে`);
+      }
+    });
+
   const saveFee = (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -408,16 +442,27 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
               )}
             </span>
             {isAdmin && (
-              <button
-                type="button"
-                onClick={() => {
-                  setAdvDialogInput("");
-                  setDialog({ type: "advance" });
-                }}
-                className="shrink-0 rounded-lg border border-[#0f3d2e] px-3 py-1.5 text-xs font-semibold text-[#0f3d2e]"
-              >
-                অগ্রিম নিন
-              </button>
+              <div className="flex shrink-0 gap-2">
+                {advanceBalance > 0 && (
+                  <button
+                    type="button"
+                    onClick={openManualAdvance}
+                    className="rounded-lg bg-[#2f7d57] px-3 py-1.5 text-xs font-semibold text-white"
+                  >
+                    অগ্রিম সমন্বয়
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdvDialogInput("");
+                    setDialog({ type: "advance" });
+                  }}
+                  className="rounded-lg border border-[#0f3d2e] px-3 py-1.5 text-xs font-semibold text-[#0f3d2e]"
+                >
+                  অগ্রিম নিন
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -660,6 +705,53 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
                     className="w-full px-3 py-2 text-center border rounded-lg border-slate-300"
                   />
                 </>
+              ) : dialog.type === "manualAdvance" ? (
+                <div className="space-y-3 text-left">
+                  <div className="text-center">
+                    <p className="font-semibold text-slate-800">কোন মাসে অগ্রিম সমন্বয় করবেন?</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      অবশিষ্ট অগ্রিম: ৳{advanceBalance}। প্রতিটি মাসে বকেয়ার বেশি সমন্বয় করা যাবে না।
+                    </p>
+                  </div>
+                  <div className="max-h-[48vh] space-y-2 overflow-y-auto">
+                    {Object.entries(manualAdvance).map(([month, value]) => {
+                      const outstanding = monthOutstanding(pm.find((item) => item.monthName === month));
+                      return (
+                        <div key={month} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2">
+                          <input
+                            type="checkbox"
+                            className={checkbox}
+                            checked={value.selected}
+                            onChange={(e) => setManualAdvance((current) => ({
+                              ...current,
+                              [month]: { ...current[month], selected: e.target.checked },
+                            }))}
+                          />
+                          <span className="min-w-0 flex-1 text-sm font-medium text-slate-700">
+                            {BN[month] || month}
+                            <span className="block text-[11px] text-slate-400">বাকি ৳{outstanding}</span>
+                          </span>
+                          <input
+                            type="number"
+                            min="0.01"
+                            max={outstanding}
+                            step="0.01"
+                            disabled={!value.selected}
+                            value={value.amount}
+                            onChange={(e) => setManualAdvance((current) => ({
+                              ...current,
+                              [month]: { ...current[month], amount: e.target.value },
+                            }))}
+                            className="w-28 rounded-md border border-slate-300 px-2 py-1.5 text-right text-sm disabled:bg-slate-100"
+                          />
+                        </div>
+                      );
+                    })}
+                    {!Object.keys(manualAdvance).length && (
+                      <p className="py-5 text-center text-sm text-slate-500">সমন্বয়ের জন্য কোনো বকেয়া মাস নেই।</p>
+                    )}
+                  </div>
+                </div>
               ) : dialog.type === "due" ? (
                 <>
                   <p>আগের বছরের বকেয়া কত টাকা পরিশোধ করছেন?</p>
@@ -691,10 +783,10 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
                 </button>
                 <button
                   disabled={busy}
-                  onClick={confirmAction}
+                  onClick={dialog.type === "manualAdvance" ? allocateAdvance : confirmAction}
                   className={`${btn} bg-[#2f7d57] text-white`}
                 >
-                  {busy ? "…" : "হ্যাঁ"}
+                  {busy ? "…" : dialog.type === "manualAdvance" ? "সমন্বয় করুন" : "হ্যাঁ"}
                 </button>
               </div>
             </div>
