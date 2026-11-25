@@ -83,8 +83,11 @@ export async function PATCH(request) {
               $add: [
                 {
                   $cond: [
-                    { $eq: ["$Tarabi.status", "unpaid"] },
-                    { $toDouble: "$Tarabi.fee" },
+                    { $ne: ["$Tarabi.status", "paid"] },
+                    { $max: [0, { $subtract: [
+                      { $convert: { input: "$Tarabi.fee", to: "double", onError: 0, onNull: 0 } },
+                      { $convert: { input: "$Tarabi.paidAmount", to: "double", onError: 0, onNull: 0 } },
+                    ] }] },
                     0,
                   ],
                 },
@@ -103,9 +106,12 @@ export async function PATCH(request) {
             $add: [
               {
                 $cond: [
-                  { $eq: ["$Tarabi.status", "unpaid"] },
-                  { $toDouble: "$Tarabi.fee" },
-                  0,
+                  { $ne: ["$Tarabi.status", "paid"] },
+                    { $max: [0, { $subtract: [
+                      { $convert: { input: "$Tarabi.fee", to: "double", onError: 0, onNull: 0 } },
+                      { $convert: { input: "$Tarabi.paidAmount", to: "double", onError: 0, onNull: 0 } },
+                    ] }] },
+                    0,
                 ],
               },
               {
