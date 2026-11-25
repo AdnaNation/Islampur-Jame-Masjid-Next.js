@@ -30,7 +30,7 @@ async function runMonthlyAdvance(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { year, month } = dhakaDateParts();
+  const { year, month, day } = dhakaDateParts();
   const monthName = MONTHS[month - 1];
   const { userCollection, advanceUseCollection, lastClosingCollection } = await getCollections();
   const yearState = await lastClosingCollection.findOne(
@@ -44,6 +44,18 @@ async function runMonthlyAdvance(request) {
       reason: "The current year has not been opened by the year-closing workflow yet",
       year,
       month: monthName,
+    });
+  }
+  const runId = `monthly-run:${year}:${month}`;
+  const completedRun = await advanceUseCollection.findOne({ _id: runId });
+  if (completedRun) {
+    return NextResponse.json({
+      success: true,
+      skipped: true,
+      reason: "This month's scheduled advance adjustment has already completed",
+      year,
+      month: monthName,
+      day,
     });
   }
   const holders = await userCollection
@@ -119,10 +131,19 @@ async function runMonthlyAdvance(request) {
     }
   }
 
+  if (failed === 0) {
+    await advanceUseCollection.updateOne(
+      { _id: runId },
+      { $setOnInsert: { year, month: monthName, dayStarted: day, source: "monthly-cron-run", at: new Date() } },
+      { upsert: true },
+    );
+  }
+
   return NextResponse.json({
     success: failed === 0,
     year,
     month: monthName,
+    day,
     processed,
     skipped,
     failed,
