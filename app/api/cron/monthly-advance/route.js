@@ -30,7 +30,7 @@ async function runMonthlyAdvance(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { year, month, day } = dhakaDateParts();
+  const { year, month } = dhakaDateParts();
   const monthName = MONTHS[month - 1];
   const { userCollection, advanceUseCollection, lastClosingCollection } = await getCollections();
   const yearState = await lastClosingCollection.findOne(
