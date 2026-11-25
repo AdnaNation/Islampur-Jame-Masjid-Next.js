@@ -139,15 +139,20 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
   const tarabiFee =
     tarabiOn && u.Tarabi?.status === "unpaid" ? Number(u.Tarabi?.fee) || 0 : 0;
   const pm = u.PayMonths || [];
+  const monthOutstanding = (m) =>
+    Math.max(0, rate - Math.min(rate, Number(m.paidAmount) || 0));
   const unpaidNow = pm
     .slice(0, monthIdx + 1)
-    .filter((m) => m.status === "unpaid").length;
-  const totalDue = unpaidNow * rate + (Number(u.Due) || 0) + tarabiFee;
+    .reduce((sum, m) => sum + (m.status === "paid" ? 0 : monthOutstanding(m)), 0);
+  const totalDue = unpaidNow + (Number(u.Due) || 0) + tarabiFee;
   const unpaidAll = pm
-    .filter((m) => m.status === "unpaid")
+    .filter((m) => m.status !== "paid")
     .map((m) => m.monthName);
 
-  const monthlyAmt = months.length * rate;
+  const monthlyAmt = months.reduce((sum, name) => {
+    const month = pm.find((item) => item.monthName === name);
+    return sum + (month ? monthOutstanding(month) : rate);
+  }, 0);
   const tarabiAmt = withTarabi ? tarabiFee : 0;
   const dueAmount = withDue ? Number(dueInput || 0) : 0;
   const total = monthlyAmt + tarabiAmt + dueAmount;
@@ -209,9 +214,11 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
         selectedMonth: monthName,
       });
       if (res.data.queued || res.data.modifiedCount > 0) {
-        record({ fee: u.FeeRate, monthName, type: "Monthly" });
+        const month = pm.find((item) => item.monthName === monthName);
+        const amount = month ? monthOutstanding(month) : rate;
+        record({ fee: amount, monthName, type: "Monthly" });
         sms(
-          `ইসলামপুর জামে মসজিদের ${monthName}'র মাসিক চাঁদা বাবদ ৳${u.FeeRate} পরিশোধ করেছেন।`,
+          `ইসলামপুর জামে মসজিদের ${monthName}'র বাকি মাসিক চাঁদা বাবদ ৳${amount} পরিশোধ করেছেন।`,
         );
         done(res.data.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
       }
@@ -396,7 +403,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
               <b className="tabular-nums text-[#2f7d57]">৳{advanceBalance}</b>
               {advanceBalance > 0 && (
                 <span className="block text-[11px] text-slate-400">
-                  নতুন বছরের শুরুতে নিজে থেকে কাটা হবে
+                  প্রতি মাসের ১ তারিখে মাসিক চাঁদা থেকে স্বয়ংক্রিয়ভাবে সমন্বয় হবে
                 </span>
               )}
             </span>
@@ -421,7 +428,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
             <br />
             আগের বছরের: ৳{u.Due}
             <br />
-            এই বছরের: ৳{unpaidNow * rate}
+            এই বছরের: ৳{unpaidNow}
             <br />
             <b>মোট: ৳{totalDue}</b>
             {isAdmin && (
@@ -461,7 +468,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
                 canPay={isAdmin && !prev}
                 onPay={() => setDialog({ type: "month", month: m.monthName })}
               >
-                {!prev && isAdmin && m.status === "unpaid" && (
+                {!prev && isAdmin && m.status !== "paid" && (
                   <input
                     type="checkbox"
                     className={checkbox}
