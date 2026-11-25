@@ -10,12 +10,24 @@ export async function GET(request) {
     {
       $addFields: {
         feeRateAsNumber: { $toDouble: "$FeeRate" },
-        paidMonthCount: {
-          $size: {
-            $filter: {
-              input: "$PayMonths",
+        paidMonthValue: {
+          $sum: {
+            $map: {
+              input: { $ifNull: ["$PayMonths", []] },
               as: "month",
-              cond: { $eq: ["$$month.status", "paid"] },
+              in: {
+                $cond: [
+                  { $eq: ["$month.status", "paid"] },
+                  { $toDouble: "$FeeRate" },
+                  {
+                    $cond: [
+                      { $eq: ["$month.status", "partial"] },
+                      { $convert: { input: "$month.paidAmount", to: "double", onError: 0, onNull: 0 } },
+                      0,
+                    ],
+                  },
+                ],
+              },
             },
           },
         },
@@ -23,9 +35,7 @@ export async function GET(request) {
     },
     {
       $addFields: {
-        totalPaidByUser: {
-          $multiply: ["$feeRateAsNumber", "$paidMonthCount"],
-        },
+        totalPaidByUser: "$paidMonthValue",
       },
     },
     {

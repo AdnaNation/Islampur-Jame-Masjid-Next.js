@@ -15,6 +15,7 @@ const TYPE_LABEL = {
   Monthly: "মাসিক চাঁদা",
   Tarabi: "তারাবীর চাঁদা",
   Due: "বকেয়া চাঁদা",
+  Advance: "অগ্রিম চাঁদা",
   RentMonthly: "দোকান ভাড়া",
   RentDue: "বকেয়া দোকান ভাড়া",
 };

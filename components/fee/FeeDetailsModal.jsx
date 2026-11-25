@@ -100,6 +100,9 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
   const [withDue, setWithDue] = useState(false);
   const [dueInput, setDueInput] = useState("");
   const [payDueInput, setPayDueInput] = useState("");
+  const [advInput, setAdvInput] = useState("");
+  const [advDialogInput, setAdvDialogInput] = useState("");
+  const [manualAdvance, setManualAdvance] = useState({});
   const [dialog, setDialog] = useState(null);
   const [showBreak, setShowBreak] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -134,21 +137,28 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
   const year = new Date().getFullYear();
   const monthIdx = new Date().getMonth();
   const rate = Number(u.FeeRate) || 0;
-  const tarabiFee =
-    tarabiOn && u.Tarabi?.status === "unpaid" ? Number(u.Tarabi?.fee) || 0 : 0;
+  const tarabiOutstanding = Math.max(0, (Number(u.Tarabi?.fee) || 0) - (Number(u.Tarabi?.paidAmount) || 0));
+  const tarabiFee = tarabiOn && u.Tarabi?.status !== "paid" ? tarabiOutstanding : 0;
   const pm = u.PayMonths || [];
+  const monthOutstanding = (m) =>
+    Math.max(0, rate - Math.min(rate, Number(m.paidAmount) || 0));
   const unpaidNow = pm
     .slice(0, monthIdx + 1)
-    .filter((m) => m.status === "unpaid").length;
-  const totalDue = unpaidNow * rate + (Number(u.Due) || 0) + tarabiFee;
+    .reduce((sum, m) => sum + (m.status === "paid" ? 0 : monthOutstanding(m)), 0);
+  const totalDue = unpaidNow + (Number(u.Due) || 0) + tarabiFee;
   const unpaidAll = pm
-    .filter((m) => m.status === "unpaid")
+    .filter((m) => m.status !== "paid")
     .map((m) => m.monthName);
 
-  const monthlyAmt = months.length * rate;
+  const monthlyAmt = months.reduce((sum, name) => {
+    const month = pm.find((item) => item.monthName === name);
+    return sum + (month ? monthOutstanding(month) : rate);
+  }, 0);
   const tarabiAmt = withTarabi ? tarabiFee : 0;
   const dueAmount = withDue ? Number(dueInput || 0) : 0;
   const total = monthlyAmt + tarabiAmt + dueAmount;
+  const extraAdv = Number(advInput) > 0 ? Number(advInput) : 0;
+  const advanceBalance = Number(u.Advance) || 0;
 
   // ---- helpers ----
   const flash = (text, ok = true) => {
@@ -205,9 +215,11 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
         selectedMonth: monthName,
       });
       if (res.data.queued || res.data.modifiedCount > 0) {
-        record({ fee: u.FeeRate, monthName, type: "Monthly" });
+        const month = pm.find((item) => item.monthName === monthName);
+        const amount = month ? monthOutstanding(month) : rate;
+        record({ fee: amount, monthName, type: "Monthly" });
         sms(
-          `ইসলামপুর জামে মসজিদের ${monthName}'র মাসিক চাঁদা বাবদ ৳${u.FeeRate} পরিশোধ করেছেন।`,
+          `ইসলামপুর জামে মসজিদের ${monthName}'র বাকি মাসিক চাঁদা বাবদ ৳${amount} পরিশোধ করেছেন।`,
         );
         done(res.data.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
       }
@@ -217,9 +229,9 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
     run(async () => {
       const res = await axiosPublic.patch(`/tarabeePaid/${u._id}`);
       if (res.data.queued || res.data.modifiedCount > 0) {
-        record({ fee: u.Tarabi?.fee, type: "Tarabi" });
+        record({ fee: tarabiOutstanding, type: "Tarabi" });
         sms(
-          `আপনি তারাবীর চাঁদা বাবদ ৳${u.Tarabi?.fee} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
+          `আপনি তারাবীর চাঁদা বাবদ ৳${tarabiOutstanding} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
         );
         done(res.data.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
       }
@@ -243,7 +255,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
 
   const payAll = () =>
     run(async () => {
-      if (total === 0) return;
+      if (total + extraAdv === 0) return;
       const res = await axiosPublic.post("/combined-payment", {
         userId: u._id,
         name: u.NameBn,
@@ -251,12 +263,13 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
         monthly: months.length ? { months, amount: monthlyAmt } : null,
         tarabi: tarabiAmt > 0 ? { amount: tarabiAmt } : null,
         due: dueAmount > 0 ? { amount: dueAmount } : null,
+        advance: extraAdv > 0 ? { amount: extraAdv } : null,
       });
       // offline: the server sends the SMS receipt itself when this syncs
       if (res?.data?.slipId && u?.Number) {
         axiosPublic.post("/whatsapp/payment", {
           to: u.Number,
-          total_amount: total,
+          total_amount: total + extraAdv,
           slipId: res.data.slipId,
         });
       }
@@ -264,7 +277,69 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
       setWithTarabi(false);
       setWithDue(false);
       setDueInput("");
+      setAdvInput("");
       done(res?.data?.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
+    });
+
+  const payAdvance = () =>
+    run(async () => {
+      const amount = Number(advDialogInput);
+      if (!(amount > 0) || !Number.isFinite(amount))
+        return flash("সঠিক টাকার অংক দিন", false);
+      const res = await axiosPublic.post("/combined-payment", {
+        userId: u._id,
+        name: u.NameBn,
+        home: u.HomeName,
+        advance: { amount },
+      });
+      if (res?.data?.slipId && u?.Number) {
+        axiosPublic.post("/whatsapp/payment", {
+          to: u.Number,
+          total_amount: amount,
+          slipId: res.data.slipId,
+        }).catch(() => {});
+      }
+      setAdvDialogInput("");
+      done(res?.data?.queued ? QUEUED_TEXT : "অগ্রিম জমা হয়েছে");
+    });
+
+  const openManualAdvance = () => {
+    const initial = {};
+    pm.filter((month) => month.status !== "paid" && monthOutstanding(month) > 0).forEach((month) => {
+      const key = `month:${month.monthName}`;
+      initial[key] = { type: "month", month: month.monthName, label: BN[month.monthName] || month.monthName, outstanding: monthOutstanding(month), selected: false, amount: String(monthOutstanding(month)) };
+    });
+    if (tarabiOn && u.Tarabi?.status !== "paid" && tarabiOutstanding > 0) {
+      initial.tarabi = { type: "tarabi", label: "তারাবী", outstanding: tarabiOutstanding, selected: false, amount: String(tarabiOutstanding) };
+    }
+    const dueOutstanding = Math.max(0, Number(u.Due) || 0);
+    if (dueOutstanding > 0) initial.due = { type: "due", label: "আগের বকেয়া", outstanding: dueOutstanding, selected: false, amount: String(dueOutstanding) };
+    setManualAdvance(initial);
+    setDialog({ type: "manualAdvance" });
+  };
+
+  const allocateAdvance = () =>
+    run(async () => {
+      const allocations = Object.values(manualAdvance).filter((value) => value.selected).map((value) => ({
+        type: value.type, ...(value.month ? { month: value.month } : {}), amount: Number(value.amount),
+      }));
+      if (!allocations.length || allocations.some((item) => !(item.amount > 0) || !Number.isFinite(item.amount))) {
+        return flash("সমন্বয়ের জন্য খাত নির্বাচন ও সঠিক টাকার পরিমাণ দিন", false);
+      }
+      if (allocations.some((item) => item.amount > manualAdvance[item.type === "month" ? `month:${item.month}` : item.type].outstanding + 0.009)) {
+        return flash("নির্বাচিত খাতের বকেয়ার চেয়ে বেশি সমন্বয় করা যাবে না", false);
+      }
+      const total = allocations.reduce((sum, item) => sum + item.amount, 0);
+      if (total > advanceBalance + 0.009) {
+        return flash("সমন্বয়ের পরিমাণ অগ্রিম ব্যালেন্সের চেয়ে বেশি", false);
+      }
+      const res = await axiosPublic.post("/advance/allocate", {
+        userId: u._id,
+        allocations,
+      });
+      if (res.data.success) {
+        done(`৳${res.data.used} অগ্রিম সমন্বয় হয়েছে`);
+      }
     });
 
   const saveFee = (e) => {
@@ -306,6 +381,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
     tarabi: payTarabi,
     due: payDue,
     all: payAll,
+    advance: payAdvance,
   }[dialog?.type];
   const checkbox = "h-4 w-4 accent-[#2f7d57]";
 
@@ -360,13 +436,50 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
           />
         </div>
 
+        {!prev && (advanceBalance > 0 || isAdmin) && (
+          <div className="flex items-center justify-between gap-2 px-4 pt-3 text-sm">
+            <span className="text-slate-600">
+              অগ্রিম জমা:{" "}
+              <b className="tabular-nums text-[#2f7d57]">৳{advanceBalance}</b>
+              {advanceBalance > 0 && (
+                <span className="block text-[11px] text-slate-400">
+                  অ্যাডমিন চাইলে আগে সমন্বয় করতে পারবেন; বাকি টাকা প্রতি মাসের ১ তারিখে স্বয়ংক্রিয়ভাবে সমন্বয় হবে
+                </span>
+              )}
+            </span>
+            {isAdmin && (
+              <div className="flex shrink-0 gap-2">
+                {advanceBalance > 0 && (
+                  <button
+                    type="button"
+                    onClick={openManualAdvance}
+                    className="rounded-lg bg-[#2f7d57] px-3 py-1.5 text-xs font-semibold text-white"
+                  >
+                    অগ্রিম সমন্বয়
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdvDialogInput("");
+                    setDialog({ type: "advance" });
+                  }}
+                  className="rounded-lg border border-[#0f3d2e] px-3 py-1.5 text-xs font-semibold text-[#0f3d2e]"
+                >
+                  অগ্রিম নিন
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {showBreak && !prev && (
           <p className="p-3 mx-4 mt-2 text-sm leading-6 rounded-lg bg-slate-50 text-slate-700">
             তারাবী: ৳{tarabiFee}
             <br />
             আগের বছরের: ৳{u.Due}
             <br />
-            এই বছরের: ৳{unpaidNow * rate}
+            এই বছরের: ৳{unpaidNow}
             <br />
             <b>মোট: ৳{totalDue}</b>
             {isAdmin && (
@@ -406,7 +519,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
                 canPay={isAdmin && !prev}
                 onPay={() => setDialog({ type: "month", month: m.monthName })}
               >
-                {!prev && isAdmin && m.status === "unpaid" && (
+                {!prev && isAdmin && m.status !== "paid" && (
                   <input
                     type="checkbox"
                     className={checkbox}
@@ -428,7 +541,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
               {!prev &&
                 isAdmin &&
                 tarabiOn &&
-                u.Tarabi?.status === "unpaid" && (
+                u.Tarabi?.status !== "paid" && (
                   <input
                     type="checkbox"
                     className={checkbox}
@@ -482,7 +595,10 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
               মোট ৳{total}
             </span>
             <button
-              onClick={() => setDialog({ type: "all" })}
+              onClick={() => {
+                setAdvInput("");
+                setDialog({ type: "all" });
+              }}
               className="rounded-lg bg-[#0f3d2e] px-5 py-2 text-sm font-semibold text-white"
             >
               সব পেইড?
@@ -560,9 +676,87 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
                   )}
                   {tarabiAmt > 0 && <p>তারাবীর ৳{tarabiAmt} টাকা</p>}
                   {dueAmount > 0 && <p>বকেয়ার ৳{dueAmount} টাকা</p>}
+                  {extraAdv > 0 && <p>অগ্রিম জমা ৳{extraAdv} টাকা</p>}
+                  <label className="block pt-3 text-xs text-left text-slate-500">
+                    বাড়তি টাকা দিলে অগ্রিম হিসেবে জমা হবে (ঐচ্ছিক)
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="decimal"
+                      value={advInput}
+                      onChange={(e) => setAdvInput(e.target.value)}
+                      placeholder="যেমন: 100"
+                      className="w-full px-3 py-2 mt-1 text-sm text-center border rounded-lg border-slate-300"
+                    />
+                  </label>
                   <p className="pt-2 mt-1 font-semibold border-t">
-                    মোট ৳{total} টাকা চাঁদা দেয়ার ব্যাপারটা আপনি কি নিশ্চিত?
+                    মোট ৳{total + extraAdv} টাকা চাঁদা দেয়ার ব্যাপারটা আপনি কি নিশ্চিত?
                   </p>
+                </div>
+              ) : dialog.type === "advance" ? (
+                <>
+                  <p className="leading-6">
+                    কত টাকা অগ্রিম জমা নিচ্ছেন?
+                    <br />
+                    <span className="text-xs text-slate-500">
+                      টাকাটি অগ্রিম হিসেবে জমা থাকবে। চাইলে এখনই নির্দিষ্ট মাসে সমন্বয় করুন, নতুবা প্রতি মাসের ১ তারিখে স্বয়ংক্রিয়ভাবে কাটা হবে।
+                    </span>
+                  </p>
+                  <input
+                    type="number"
+                    min="1"
+                    inputMode="decimal"
+                    value={advDialogInput}
+                    onChange={(e) => setAdvDialogInput(e.target.value)}
+                    className="w-full px-3 py-2 text-center border rounded-lg border-slate-300"
+                  />
+                </>
+              ) : dialog.type === "manualAdvance" ? (
+                <div className="space-y-3 text-left">
+                  <div className="text-center">
+                    <p className="font-semibold text-slate-800">কোন খাতে অগ্রিম সমন্বয় করবেন?</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      অবশিষ্ট অগ্রিম: ৳{advanceBalance}। মাসিক, তারাবী ও আগের বকেয়া—প্রতিটি খাতে আংশিক বা সম্পূর্ণ সমন্বয় করা যাবে।
+                    </p>
+                  </div>
+                  <div className="max-h-[48vh] space-y-2 overflow-y-auto">
+                    {Object.entries(manualAdvance).map(([key, value]) => {
+                      const outstanding = value.outstanding;
+                      return (
+                        <div key={key} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2">
+                          <input
+                            type="checkbox"
+                            className={checkbox}
+                            checked={value.selected}
+                            onChange={(e) => setManualAdvance((current) => ({
+                              ...current,
+                              [key]: { ...current[key], selected: e.target.checked },
+                            }))}
+                          />
+                          <span className="min-w-0 flex-1 text-sm font-medium text-slate-700">
+                            {value.label}
+                            <span className="block text-[11px] text-slate-400">বাকি ৳{outstanding}</span>
+                          </span>
+                          <input
+                            type="number"
+                            min="0.01"
+                            max={outstanding}
+                            step="0.01"
+                            disabled={!value.selected}
+                            value={value.amount}
+                            onChange={(e) => setManualAdvance((current) => ({
+                              ...current,
+                              [key]: { ...current[key], amount: e.target.value },
+                            }))}
+                            className="w-28 rounded-md border border-slate-300 px-2 py-1.5 text-right text-sm disabled:bg-slate-100"
+                          />
+                        </div>
+                      );
+                    })}
+                    {!Object.keys(manualAdvance).length && (
+                      <p className="py-5 text-center text-sm text-slate-500">সমন্বয়ের জন্য কোনো বকেয়া খাত নেই।</p>
+                    )}
+                  </div>
                 </div>
               ) : dialog.type === "due" ? (
                 <>
@@ -595,10 +789,10 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
                 </button>
                 <button
                   disabled={busy}
-                  onClick={confirmAction}
+                  onClick={dialog.type === "manualAdvance" ? allocateAdvance : confirmAction}
                   className={`${btn} bg-[#2f7d57] text-white`}
                 >
-                  {busy ? "…" : "হ্যাঁ"}
+                  {busy ? "…" : dialog.type === "manualAdvance" ? "সমন্বয় করুন" : "হ্যাঁ"}
                 </button>
               </div>
             </div>

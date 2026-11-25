@@ -67,6 +67,7 @@ export async function GET(request) {
       monthly: member.monthly,
       tarabi: member.tarabi,
       due: member.due,
+      advance: member.advance,
       total: member.total,
     },
     rentIncome: { monthly: rent.monthly, due: rent.due, total: rent.total },

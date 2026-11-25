@@ -91,6 +91,7 @@ export async function GET(request) {
       member.monthly > 0 && `মাসিক ${member.monthly}`,
       member.tarabi > 0 && `তারাবী ${member.tarabi}`,
       member.due > 0 && `বকেয়া ${member.due}`,
+      member.advance > 0 && `অগ্রিম ${member.advance}`,
     ]
       .filter(Boolean)
       .join(" • ");

@@ -310,14 +310,17 @@ export const DuesSelector = ({
                 type="button"
                 aria-pressed={on}
                 onClick={() => onToggleMonth(m.monthName)}
-                className={`flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-sm font-medium transition ${
+                className={`flex flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-2 text-sm font-medium transition ${
                   on
                     ? "border-[#0f3d2e] bg-[#0f3d2e] text-white"
                     : "border-slate-300 bg-white text-slate-700 hover:border-[#2f7d57] hover:bg-[#eef3ee]"
                 }`}
               >
                 {on && <FiCheck className="text-xs" />}
-                {monthTranslation[m.monthName] || m.monthName}
+                <span>{monthTranslation[m.monthName] || m.monthName}</span>
+                <span className={`text-[10px] ${on ? "text-white/75" : "text-slate-500"}`}>
+                  ৳{Math.max(0, Number(user.FeeRate || 0) - (Number(m.paidAmount) || 0))}
+                </span>
               </button>
             );
           })}

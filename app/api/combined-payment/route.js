@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
+import clientPromise from "@/lib/mongodb";
 import { getCollections } from "@/lib/mongodb";
 import { sendSms } from "@/lib/sms";
 import { formatMonthRange } from "@/lib/monthRange";
@@ -25,17 +26,18 @@ async function createCombinedPayment(request) {
   const name = str(body.name, 100);
   const home = str(body.home, 100);
 
-  if (!isId(userId) || (!body.monthly && !body.tarabi && !body.due)) {
+  if (!isId(userId) || (!body.monthly && !body.tarabi && !body.due && !body.advance)) {
     return NextResponse.json(
-      { error: "userId and at least one of monthly, tarabi, due are required" },
+      { error: "userId and at least one of monthly, tarabi, due, advance are required" },
       { status: 400 },
     );
   }
 
-  // re-build the three parts from validated values only
+  // Rebuild all payment parts from validated values only.
   let monthly = null;
   let tarabi = null;
   let due = null;
+  let advance = null;
   if (body.monthly) {
     const amount = money(body.monthly.amount);
     if (!isMonthList(body.monthly.months) || !amount) return bad();
@@ -51,14 +53,22 @@ async function createCombinedPayment(request) {
     if (!amount) return bad();
     due = { amount };
   }
+  if (body.advance) {
+    const amount = money(body.advance.amount);
+    if (!amount || amount <= 0) return bad("অগ্রিমের টাকার পরিমাণ সঠিক নয়");
+    advance = { amount };
+  }
 
   const { userCollection, paymentCollection } = await getCollections();
   const userQuery = { _id: new ObjectId(userId) };
   const user = await userCollection.findOne(userQuery);
+  if (!user) return NextResponse.json({ error: "সদস্য পাওয়া যায়নি" }, { status: 404 });
 
   const when = actionTime(request);
   const time = when.toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
-  const year = when.getFullYear();
+  const year = Number(
+    when.toLocaleString("en-US", { timeZone: "Asia/Dhaka", year: "numeric" }),
+  );
   const messageParts = [];
   const slipItems = [];
 
@@ -130,6 +140,71 @@ async function createCombinedPayment(request) {
     messageParts.push(`বকেয়া চাঁদা বাবদ ৳${due.amount}`);
   }
 
+  if (advance) {
+    const client = await clientPromise;
+    const session = client.startSession();
+    let paid;
+    try {
+      await session.withTransaction(async () => {
+        const current = await userCollection.findOne(userQuery, { session });
+        if (!current) throw new Error("Member not found for advance");
+        paid = await paymentCollection.insertOne({
+          userId,
+          name,
+          home,
+          fee: advance.amount,
+          type: "Advance",
+          time,
+          year,
+        }, { session });
+
+        const existingLots = Array.isArray(current.AdvanceLots)
+          ? current.AdvanceLots.filter((lot) => Number(lot.remaining) > 0)
+          : [];
+        const tracked = existingLots.reduce(
+          (sum, lot) => sum + (Number(lot.remaining) || 0),
+          0,
+        );
+        const currentAdvance = Number(current.Advance) || 0;
+        const lots = [...existingLots];
+        if (tracked < currentAdvance) {
+          const legacy = Math.round((currentAdvance - tracked) * 100) / 100;
+          lots.unshift({
+            paymentId: null,
+            amount: legacy,
+            remaining: legacy,
+            legacy: true,
+          });
+        }
+        lots.push({
+          paymentId: String(paid.insertedId),
+          amount: advance.amount,
+          remaining: advance.amount,
+          receivedAt: when,
+        });
+        const updated = await userCollection.updateOne(
+          userQuery,
+          {
+            $set: {
+              Advance: Math.round((currentAdvance + Number(advance.amount)) * 100) / 100,
+              AdvanceLots: lots,
+            },
+          },
+          { session },
+        );
+        if (!updated.matchedCount) throw new Error("Member not found for advance");
+      });
+    } finally {
+      await session.endSession();
+    }
+    slipItems.push({
+      type: "Advance",
+      amount: advance.amount,
+      paymentId: paid.insertedId,
+    });
+    messageParts.push(`অগ্রিম চাঁদা বাবদ ৳${advance.amount} জমা`);
+  }
+
   const joinedParts =
     messageParts.length > 1
       ? messageParts.slice(0, -1).join(", ") +
@@ -152,7 +227,7 @@ async function createCombinedPayment(request) {
   await sendConfirmationSms(user?.Number, smsMessage);
 
   if (isReplay(request)) {
-    const total = [monthly, tarabi, due].reduce(
+    const total = [monthly, tarabi, due, advance].reduce(
       (sum, part) => sum + Number(part?.amount || 0),
       0,
     );

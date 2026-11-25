@@ -47,13 +47,17 @@ export async function POST(request) {
       return bad("মাস সঠিক নয়");
     const unpaid = new Set(
       (user.PayMonths || [])
-        .filter((m) => m.status === "unpaid")
+        .filter((m) => m.status !== "paid")
         .map((m) => m.monthName),
     );
     if (!months.every((m) => unpaid.has(m)))
       return bad("বেছে নেওয়া মাস আগেই পরিশোধ করা হয়েছে");
+    const expectedAmount = months.reduce((sum, monthName) => {
+      const month = (user.PayMonths || []).find((item) => item.monthName === monthName);
+      return sum + Math.max(0, Number(user.FeeRate || 0) - (Number(month?.paidAmount) || 0));
+    }, 0);
     const amount = money(claim.monthly.amount);
-    if (amount === null || !same(amount, Number(user.FeeRate || 0) * months.length))
+    if (amount === null || !same(amount, expectedAmount))
       return bad("মাসিক চাঁদার পরিমাণ মিলছে না");
     monthly = { months, amount, monthName: formatMonthRange(months) };
   }

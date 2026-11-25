@@ -169,7 +169,9 @@ function ReportView() {
           <p className="text-xs text-center text-slate-500">
             “মাসিক চাঁদা” লাইনে মেম্বারদের পেমেন্ট নিজে থেকেই যোগ হয় (বাতিল করা
             বাদে): মাসিক {amt(data.memberFees.monthly)} + তারাবী{" "}
-            {amt(data.memberFees.tarabi)} + বকেয়া {amt(data.memberFees.due)} ={" "}
+            {amt(data.memberFees.tarabi)} + বকেয়া {amt(data.memberFees.due)}
+            {data.memberFees.advance > 0 &&
+              ` + অগ্রিম ${amt(data.memberFees.advance)}`} ={" "}
             {amt(data.memberFees.total)}
           </p>
         )}

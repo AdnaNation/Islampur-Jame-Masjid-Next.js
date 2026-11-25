@@ -67,7 +67,7 @@ const DirectPaymentPage = () => {
         if (res.data && res.data._id) {
           setUser(res.data);
           const unpaid = (res.data.PayMonths || []).filter(
-            (m) => m.status === "unpaid",
+            (m) => m.status !== "paid",
           );
           const hasDue =
             unpaid.length > 0 ||
@@ -94,7 +94,7 @@ const DirectPaymentPage = () => {
   }, [user]);
 
   const unpaidMonths = (user?.PayMonths || []).filter(
-    (m) => m.status === "unpaid",
+    (m) => m.status !== "paid",
   );
 
   const toggleMonth = (monthName) => {
@@ -105,7 +105,11 @@ const DirectPaymentPage = () => {
     );
   };
 
-  const monthlyAmount = Number(user?.FeeRate || 0) * selectedMonths.length;
+  const monthlyAmount = selectedMonths.reduce((sum, monthName) => {
+    const month = unpaidMonths.find((item) => item.monthName === monthName);
+    const rate = Number(user?.FeeRate || 0);
+    return sum + Math.max(0, rate - (Number(month?.paidAmount) || 0));
+  }, 0);
   const tarabiAmount = payTarabi ? Number(user?.Tarabi?.fee || 0) : 0;
   const dueAmountValue = payDueChecked ? Number(dueAmount || 0) : 0;
   const totalAmount = monthlyAmount + tarabiAmount + dueAmountValue;
