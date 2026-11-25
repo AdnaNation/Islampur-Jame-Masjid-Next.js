@@ -229,9 +229,9 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
     run(async () => {
       const res = await axiosPublic.patch(`/tarabeePaid/${u._id}`);
       if (res.data.queued || res.data.modifiedCount > 0) {
-        record({ fee: u.Tarabi?.fee, type: "Tarabi" });
+        record({ fee: tarabiFee, type: "Tarabi" });
         sms(
-          `আপনি তারাবীর চাঁদা বাবদ ৳${u.Tarabi?.fee} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
+          `আপনি তারাবীর চাঁদা বাবদ ৳${tarabiFee} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
         );
         done(res.data.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
       }
@@ -306,7 +306,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
   const openManualAdvance = () => {
     const initial = {};
     pm.filter((month) => month.status !== "paid" && monthOutstanding(month) > 0).forEach((month) => {
-      const key = \`month:\${month.monthName}\`;
+      const key = `month:${month.monthName}`;
       initial[key] = { type: "month", month: month.monthName, label: BN[month.monthName] || month.monthName, outstanding: monthOutstanding(month), selected: false, amount: String(monthOutstanding(month)) };
     });
     const tarabiOutstanding = Math.max(0, (Number(u.Tarabi?.fee) || 0) - (Number(u.Tarabi?.paidAmount) || 0));
@@ -327,7 +327,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
       if (!allocations.length || allocations.some((item) => !(item.amount > 0) || !Number.isFinite(item.amount))) {
         return flash("সমন্বয়ের জন্য খাত নির্বাচন ও সঠিক টাকার পরিমাণ দিন", false);
       }
-      if (allocations.some((item) => item.amount > manualAdvance[item.type === "month" ? \`month:\${item.month}\` : item.type].outstanding + 0.009)) {
+      if (allocations.some((item) => item.amount > manualAdvance[item.type === "month" ? `month:${item.month}` : item.type].outstanding + 0.009)) {
         return flash("নির্বাচিত খাতের বকেয়ার চেয়ে বেশি সমন্বয় করা যাবে না", false);
       }
       const total = allocations.reduce((sum, item) => sum + item.amount, 0);
@@ -542,7 +542,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
               {!prev &&
                 isAdmin &&
                 tarabiOn &&
-                u.Tarabi?.status === "unpaid" && (
+                u.Tarabi?.status !== "paid" && (
                   <input
                     type="checkbox"
                     className={checkbox}
