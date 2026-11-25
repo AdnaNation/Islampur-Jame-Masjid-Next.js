@@ -123,10 +123,14 @@ const AdminDashboard = () => {
               ? Number(user.Tarabi?.fee)
               : 0;
           const totalDue =
-            user.PayMonths?.slice(0, currentMonthIndex + 1).filter(
-              (m) => m.status === "unpaid",
-            ).length *
-              userFeeRate +
+            (user.PayMonths || []).slice(0, currentMonthIndex + 1).reduce(
+              (sum, month) =>
+                sum +
+                (month.status === "paid"
+                  ? 0
+                  : Math.max(0, userFeeRate - (Number(month.paidAmount) || 0))),
+              0,
+            ) +
             Number(user.Due) +
             TarabiFee;
           const message = `${monthName}-${currentYear} পর্যন্ত আপনার বকেয়া চাঁদা ৳${totalDue}। পে করতে ভিজিট করুনঃ islampurjamemasjid.org/pay/${number} -ইসলামপুর জামে মসজিদ`;
@@ -168,13 +172,18 @@ const AdminDashboard = () => {
             ? Number(user.Tarabi?.fee)
             : 0;
 
-        const unpaidMonths = user.PayMonths?.slice(
-          0,
-          currentMonthIndex + 1,
-        ).filter((m) => m.status === "unpaid").length;
+        const unpaidMonths = (user.PayMonths || [])
+          .slice(0, currentMonthIndex + 1)
+          .reduce(
+            (sum, month) =>
+              sum +
+              (month.status === "paid"
+                ? 0
+                : Math.max(0, userFeeRate - (Number(month.paidAmount) || 0))),
+            0,
+          );
 
-        const totalDue =
-          unpaidMonths * userFeeRate + Number(user.Due) + TarabiFee;
+        const totalDue = unpaidMonths + Number(user.Due) + TarabiFee;
 
         if (totalDue > 0) {
           const res = await axiosPublic.post("/sms-db/whatsapp", {
