@@ -21,7 +21,7 @@ export async function POST(request) {
     const type = item?.type || "month";
     const month = type === "month" ? item?.month : null;
     const amount = roundMoney(item?.amount);
-    const key = type === "month" ? \`month:\${month}\` : type;
+    const key = type === "month" ? `month:${month}` : type;
     if (!["month", "tarabi", "due"].includes(type) || (type === "month" && !MONTHS.includes(month)) || seen.has(key) || !(amount > 0) || !Number.isFinite(amount)) return bad("সমন্বয়ের ধরন বা টাকার পরিমাণ সঠিক নয়");
     seen.add(key);
     normalized.push({ type, ...(month ? { month } : {}), amount });
@@ -48,11 +48,11 @@ export async function POST(request) {
       for (const allocation of normalized) {
         if (allocation.type === "month") {
           const target = payMonths.find((m) => m.monthName === allocation.month);
-          if (!target || target.status === "paid") { const error = new Error(\`\${allocation.month} মাসটি পাওয়া যায়নি অথবা ইতিমধ্যে পরিশোধিত\`); error.status = 400; throw error; }
+          if (!target || target.status === "paid") { const error = new Error(`${allocation.month} মাসটি পাওয়া যায়নি অথবা ইতিমধ্যে পরিশোধিত`); error.status = 400; throw error; }
           const rate = roundMoney(Math.max(0, Number(user.FeeRate) || 0));
           const alreadyPaid = roundMoney(Math.min(rate, Math.max(0, Number(target.paidAmount) || 0)));
           const outstanding = roundMoney(Math.max(0, rate - alreadyPaid));
-          if (allocation.amount > outstanding + 0.009) { const error = new Error(\`\${allocation.month} মাসের বকেয়ার চেয়ে বেশি সমন্বয় করা যাবে না\`); error.status = 400; throw error; }
+          if (allocation.amount > outstanding + 0.009) { const error = new Error(`${allocation.month} মাসের বকেয়ার চেয়ে বেশি সমন্বয় করা যাবে না`); error.status = 400; throw error; }
           target.paidAmount = roundMoney(alreadyPaid + allocation.amount);
           target.status = target.paidAmount >= rate - 0.009 ? "paid" : "partial";
           monthsUsed = roundMoney(monthsUsed + allocation.amount);
@@ -94,7 +94,7 @@ export async function POST(request) {
       if (!updated.modifiedCount) throw new Error("সদস্যের তথ্য পরিবর্তিত হয়েছে, আবার চেষ্টা করুন");
       const now = new Date(), allocationId = new ObjectId().toString();
       await advanceUseCollection.insertOne({
-        _id: \`manual:\${allocationId}\`, userId, name: user.NameBn || user.Name || "",
+        _id: `manual:${allocationId}`, userId, name: user.NameBn || user.Name || "",
         year: now.getFullYear(), month: "manual",
         months: normalized.filter((item) => item.type === "month").map((item) => item.month),
         allocations: normalized, monthsUsed, dueUsed, tarabiUsed,
