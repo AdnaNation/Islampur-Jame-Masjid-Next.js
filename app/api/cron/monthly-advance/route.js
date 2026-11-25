@@ -31,12 +31,21 @@ async function runMonthlyAdvance(request) {
   }
 
   const { year, month, day } = dhakaDateParts();
-  if (day !== 1) {
-    return NextResponse.json({ success: true, skipped: true, reason: "Not the first day in Asia/Dhaka" });
-  }
-
   const monthName = MONTHS[month - 1];
-  const { userCollection, advanceUseCollection } = await getCollections();
+  const { userCollection, advanceUseCollection, lastClosingCollection } = await getCollections();
+  const yearState = await lastClosingCollection.findOne(
+    {},
+    { projection: { lastSendingYear: 1, _id: 0 } },
+  );
+  if (Number(yearState?.lastSendingYear) !== year - 1) {
+    return NextResponse.json({
+      success: true,
+      skipped: true,
+      reason: "The current year has not been opened by the year-closing workflow yet",
+      year,
+      month: monthName,
+    });
+  }
   const holders = await userCollection
     .find({ Advance: { $gt: 0 } }, { projection: { _id: 1 } })
     .toArray();
