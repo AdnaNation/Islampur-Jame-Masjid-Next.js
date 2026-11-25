@@ -437,7 +437,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
               <b className="tabular-nums text-[#2f7d57]">৳{advanceBalance}</b>
               {advanceBalance > 0 && (
                 <span className="block text-[11px] text-slate-400">
-                  প্রতি মাসের ১ তারিখে মাসিক চাঁদা থেকে স্বয়ংক্রিয়ভাবে সমন্বয় হবে
+                  অ্যাডমিন চাইলে আগে সমন্বয় করতে পারবেন; বাকি টাকা প্রতি মাসের ১ তারিখে স্বয়ংক্রিয়ভাবে সমন্বয় হবে
                 </span>
               )}
             </span>
@@ -693,7 +693,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
                     কত টাকা অগ্রিম জমা নিচ্ছেন?
                     <br />
                     <span className="text-xs text-slate-500">
-                      টাকাটি জমা থাকবে এবং নতুন বছরের শুরুতে নিজে থেকে চাঁদা থেকে কাটা হবে।
+                      টাকাটি অগ্রিম হিসেবে জমা থাকবে। চাইলে এখনই নির্দিষ্ট মাসে সমন্বয় করুন, নতুবা প্রতি মাসের ১ তারিখে স্বয়ংক্রিয়ভাবে কাটা হবে।
                     </span>
                   </p>
                   <input
