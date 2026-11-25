@@ -137,8 +137,8 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
   const year = new Date().getFullYear();
   const monthIdx = new Date().getMonth();
   const rate = Number(u.FeeRate) || 0;
-  const tarabiFee =
-    tarabiOn && u.Tarabi?.status !== "paid" ? Math.max(0, (Number(u.Tarabi?.fee) || 0) - (Number(u.Tarabi?.paidAmount) || 0)) : 0;
+  const tarabiOutstanding = Math.max(0, (Number(u.Tarabi?.fee) || 0) - (Number(u.Tarabi?.paidAmount) || 0));
+  const tarabiFee = tarabiOn && u.Tarabi?.status !== "paid" ? tarabiOutstanding : 0;
   const pm = u.PayMonths || [];
   const monthOutstanding = (m) =>
     Math.max(0, rate - Math.min(rate, Number(m.paidAmount) || 0));
@@ -229,9 +229,9 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
     run(async () => {
       const res = await axiosPublic.patch(`/tarabeePaid/${u._id}`);
       if (res.data.queued || res.data.modifiedCount > 0) {
-        record({ fee: tarabiFee, type: "Tarabi" });
+        record({ fee: tarabiOutstanding, type: "Tarabi" });
         sms(
-          `আপনি তারাবীর চাঁদা বাবদ ৳${tarabiFee} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
+          `আপনি তারাবীর চাঁদা বাবদ ৳${tarabiOutstanding} পরিশোধ করেছেন। -ইসলামপুর জামে মসজিদ`,
         );
         done(res.data.queued ? QUEUED_TEXT : "পরিশোধ সম্পন্ন হয়েছে");
       }
@@ -309,7 +309,6 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
       const key = `month:${month.monthName}`;
       initial[key] = { type: "month", month: month.monthName, label: BN[month.monthName] || month.monthName, outstanding: monthOutstanding(month), selected: false, amount: String(monthOutstanding(month)) };
     });
-    const tarabiOutstanding = Math.max(0, (Number(u.Tarabi?.fee) || 0) - (Number(u.Tarabi?.paidAmount) || 0));
     if (tarabiOn && u.Tarabi?.status !== "paid" && tarabiOutstanding > 0) {
       initial.tarabi = { type: "tarabi", label: "তারাবী", outstanding: tarabiOutstanding, selected: false, amount: String(tarabiOutstanding) };
     }
