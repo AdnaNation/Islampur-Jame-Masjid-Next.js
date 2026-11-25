@@ -129,6 +129,7 @@ export async function PATCH(request) {
             },
           },
           "Tarabi.status": "unpaid",
+          "Tarabi.paidAmount": 0,
           closedYear: closingYear,
         },
       },
