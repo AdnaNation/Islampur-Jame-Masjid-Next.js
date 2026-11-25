@@ -138,7 +138,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
   const monthIdx = new Date().getMonth();
   const rate = Number(u.FeeRate) || 0;
   const tarabiFee =
-    tarabiOn && u.Tarabi?.status === "unpaid" ? Number(u.Tarabi?.fee) || 0 : 0;
+    tarabiOn && u.Tarabi?.status !== "paid" ? Math.max(0, (Number(u.Tarabi?.fee) || 0) - (Number(u.Tarabi?.paidAmount) || 0)) : 0;
   const pm = u.PayMonths || [];
   const monthOutstanding = (m) =>
     Math.max(0, rate - Math.min(rate, Number(m.paidAmount) || 0));
@@ -305,23 +305,30 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
 
   const openManualAdvance = () => {
     const initial = {};
-    pm.filter((month) => month.status !== "paid").forEach((month) => {
-      initial[month.monthName] = {
-        selected: false,
-        amount: String(monthOutstanding(month)),
-      };
+    pm.filter((month) => month.status !== "paid" && monthOutstanding(month) > 0).forEach((month) => {
+      const key = \`month:\${month.monthName}\`;
+      initial[key] = { type: "month", month: month.monthName, label: BN[month.monthName] || month.monthName, outstanding: monthOutstanding(month), selected: false, amount: String(monthOutstanding(month)) };
     });
+    const tarabiOutstanding = Math.max(0, (Number(u.Tarabi?.fee) || 0) - (Number(u.Tarabi?.paidAmount) || 0));
+    if (tarabiOn && u.Tarabi?.status !== "paid" && tarabiOutstanding > 0) {
+      initial.tarabi = { type: "tarabi", label: "তারাবী", outstanding: tarabiOutstanding, selected: false, amount: String(tarabiOutstanding) };
+    }
+    const dueOutstanding = Math.max(0, Number(u.Due) || 0);
+    if (dueOutstanding > 0) initial.due = { type: "due", label: "আগের বকেয়া", outstanding: dueOutstanding, selected: false, amount: String(dueOutstanding) };
     setManualAdvance(initial);
     setDialog({ type: "manualAdvance" });
   };
 
   const allocateAdvance = () =>
     run(async () => {
-      const allocations = Object.entries(manualAdvance)
-        .filter(([, value]) => value.selected)
-        .map(([month, value]) => ({ month, amount: Number(value.amount) }));
-      if (!allocations.length || allocations.some((item) => !(item.amount > 0))) {
-        return flash("সমন্বয়ের জন্য মাস ও সঠিক টাকার পরিমাণ নির্বাচন করুন", false);
+      const allocations = Object.values(manualAdvance).filter((value) => value.selected).map((value) => ({
+        type: value.type, ...(value.month ? { month: value.month } : {}), amount: Number(value.amount),
+      }));
+      if (!allocations.length || allocations.some((item) => !(item.amount > 0) || !Number.isFinite(item.amount))) {
+        return flash("সমন্বয়ের জন্য খাত নির্বাচন ও সঠিক টাকার পরিমাণ দিন", false);
+      }
+      if (allocations.some((item) => item.amount > manualAdvance[item.type === "month" ? \`month:\${item.month}\` : item.type].outstanding + 0.009)) {
+        return flash("নির্বাচিত খাতের বকেয়ার চেয়ে বেশি সমন্বয় করা যাবে না", false);
       }
       const total = allocations.reduce((sum, item) => sum + item.amount, 0);
       if (total > advanceBalance + 0.009) {
@@ -708,27 +715,27 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
               ) : dialog.type === "manualAdvance" ? (
                 <div className="space-y-3 text-left">
                   <div className="text-center">
-                    <p className="font-semibold text-slate-800">কোন মাসে অগ্রিম সমন্বয় করবেন?</p>
+                    <p className="font-semibold text-slate-800">কোন খাতে অগ্রিম সমন্বয় করবেন?</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      অবশিষ্ট অগ্রিম: ৳{advanceBalance}। প্রতিটি মাসে বকেয়ার বেশি সমন্বয় করা যাবে না।
+                      অবশিষ্ট অগ্রিম: ৳{advanceBalance}। মাসিক, তারাবী ও আগের বকেয়া—প্রতিটি খাতে আংশিক বা সম্পূর্ণ সমন্বয় করা যাবে।
                     </p>
                   </div>
                   <div className="max-h-[48vh] space-y-2 overflow-y-auto">
-                    {Object.entries(manualAdvance).map(([month, value]) => {
-                      const outstanding = monthOutstanding(pm.find((item) => item.monthName === month));
+                    {Object.entries(manualAdvance).map(([key, value]) => {
+                      const outstanding = value.outstanding;
                       return (
-                        <div key={month} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2">
+                        <div key={key} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2">
                           <input
                             type="checkbox"
                             className={checkbox}
                             checked={value.selected}
                             onChange={(e) => setManualAdvance((current) => ({
                               ...current,
-                              [month]: { ...current[month], selected: e.target.checked },
+                              [key]: { ...current[key], selected: e.target.checked },
                             }))}
                           />
                           <span className="min-w-0 flex-1 text-sm font-medium text-slate-700">
-                            {BN[month] || month}
+                            {value.label}
                             <span className="block text-[11px] text-slate-400">বাকি ৳{outstanding}</span>
                           </span>
                           <input
@@ -740,7 +747,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
                             value={value.amount}
                             onChange={(e) => setManualAdvance((current) => ({
                               ...current,
-                              [month]: { ...current[month], amount: e.target.value },
+                              [key]: { ...current[key], amount: e.target.value },
                             }))}
                             className="w-28 rounded-md border border-slate-300 px-2 py-1.5 text-right text-sm disabled:bg-slate-100"
                           />
@@ -748,7 +755,7 @@ export default function FeeDetailsModal({ user, isAdmin, tarabiOn, onClose }) {
                       );
                     })}
                     {!Object.keys(manualAdvance).length && (
-                      <p className="py-5 text-center text-sm text-slate-500">সমন্বয়ের জন্য কোনো বকেয়া মাস নেই।</p>
+                      <p className="py-5 text-center text-sm text-slate-500">সমন্বয়ের জন্য কোনো বকেয়া খাত নেই।</p>
                     )}
                   </div>
                 </div>
