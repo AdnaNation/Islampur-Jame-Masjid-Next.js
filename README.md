@@ -14,3 +14,15 @@ Website and member fee management system for Islampur Jame Masjid — [islampurj
 
 Next.js 15 (App Router) · React · Tailwind CSS · MongoDB · React Query · JWT
 
+
+
+## Automatic advance adjustment
+
+- Advance is automatically applied to the current month's unpaid monthly fee on the 1st of each month (Bangladesh time).
+- If the balance is smaller than the monthly fee, the month stores a partial advance payment and only the remaining amount stays due.
+- Unused advance remains on the member account and carries into following months and across year boundaries. For example, ৳250 can cover December (৳100), January (৳100), and ৳50 toward February.
+- The scheduled endpoint is `/api/cron/monthly-advance`. Vercel runs it daily at 18:00 UTC; the endpoint performs work only when the date in Asia/Dhaka is the 1st.
+
+### Deployment setting
+
+Add `CRON_SECRET` as a server-side environment variable in the Vercel project (Production and Preview as appropriate). Use a long random secret. Vercel sends it as `Authorization: Bearer <CRON_SECRET>`; requests without the matching secret are rejected. Do not expose this value through a `NEXT_PUBLIC_` variable.
